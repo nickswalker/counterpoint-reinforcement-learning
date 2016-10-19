@@ -1,3 +1,4 @@
+import itertools
 from typing import Set, List
 
 from abjad import *
@@ -32,14 +33,26 @@ class CompositionEnvironment(Domain):
         self.total_beats = meter.denominator
 
     def get_actions(self, state: State) -> Set[Action]:
-        pass
+        possible_pitches = [NamedPitch("C4")]
+        possible_durations = [1]
+        actions = []
+        for pitch, duration in itertools.product(possible_pitches, possible_durations):
+            actions.append(CompositionAction(Note(pitch, duration)))
+        return actions
 
     def get_current_state(self) -> State:
-        return CompositionState(self.current_beat, )
+        notes_in_voices = []
+        for voice in self.voices:
+            notes_in_voices.append(voice.last())
+        for voice in self.given_voices:
+            notes_in_voices.append(voice.get(self.current_beat))
+        return CompositionState(self.current_beat, notes_in_voices)
 
     def apply_action(self, action: CompositionAction):
-        pass
+        for voice, note in zip(self.voices, action.notes_per_voice):
+            voice.append(note)
 
     def reset(self):
-        self.lines =
+        for voice in self.voices:
+            voice.clear()
         pass
