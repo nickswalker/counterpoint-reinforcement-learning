@@ -5,10 +5,18 @@ from typing import Tuple, List
 import numpy as np
 import scipy as scipy
 import scipy.stats
+from abjad.tools import lilypondfiletools
+from abjad.tools.indicatortools.KeySignature import KeySignature
+from abjad.tools.metertools.Meter import Meter
+from abjad.tools.pitchtools.NamedPitch import NamedPitch
 from abjad.tools.scoretools import Voice
 
+from cantus_firmi import cantus_firmi
 from counterpoint.composition_environment import CompositionEnvironment
 from counterpoint.species_counterpoint import SpeciesOneCounterpoint
+from rl.agent.qlearning import QLearning
+from rl.agent.sarsa import Sarsa
+from rl.agent.trueonlinesarsalambda import TrueOnlineSarsaLambda
 from rl.domain import Domain
 from rl.task import Task
 
@@ -25,42 +33,19 @@ def main():
 
     def save(name, results):
         data = np.c_[results]
-        np.savetxt("results/" + str(stochasticity) + "/n" + str(num_trials) + "_" + name + ".csv", data,
+        np.savetxt("results/" + str(experiment_num) + "_" + str(num_trials) + "_" + name + ".csv", data,
                    fmt=["%d", "%f", "%f", "%f"],
                    delimiter=",")
 
     if experiment_num == 0:
-        factory = agent_factory(q_learning=True)
-        q_learning_results = run_experiment(num_trials, num_evaluations, factory)
+        environment_factory = make_environment_factory([cantus_firmi[0]])
+        agent_factory = make_agent_factory(q_learning=True)
+        q_learning_results = run_experiment(num_trials, num_evaluations, agent_factory, environment_factory)
         save("Q-learning", q_learning_results)
-    elif experiment_num == 1:
-        factory = agent_factory()
-        standard_results = run_experiment(num_trials, num_evaluations, factory)
-        save("Sarsa", standard_results)
-    elif experiment_num == 2:
-        factory = agent_factory(expected=True)
-        expected_results = run_experiment(num_trials, num_evaluations, factory)
-        save("Expected Sarsa", expected_results)
-    elif experiment_num == 4:
-        factory = agent_factory(true_online=True, lmbda=0.10)
-        true_online_results = run_experiment(num_trials, num_evaluations, factory)
-        save("True Online Sarsa λ=0.1", true_online_results)
-    elif experiment_num == 5:
-        factory = agent_factory(true_online=True, lmbda=0.50)
-        true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
-        save("True Online Sarsa λ=0.5", true_online_sarsa_lambda)
-    elif experiment_num == 6:
-        factory = agent_factory(true_online=True, lmbda=0.80)
-        true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
-        save("True Online Sarsa λ=0.8", true_online_sarsa_lambda)
-    elif experiment_num == 7:
-        factory = agent_factory(true_online=True, lmbda=0.00)
-        true_online_sarsa_lambda = run_experiment(num_trials, num_evaluations, factory)
-        save("True Online Sarsa λ=0.0", true_online_sarsa_lambda)
 
 
 def run_experiment(num_trials, num_evaluations,
-                   agent_factory
+                   agent_factory, environment_factory
                    ):
     assert num_trials > 1
     evaluations_mean = []
@@ -73,8 +58,9 @@ def run_experiment(num_trials, num_evaluations,
         n += 1
         for (num_episodes, table) in train_agent(evaluation_period,
                                                  num_evaluations,
-                                                 agent_factory):
-            evaluation = evaluate(table, agent_factory)
+                                                 agent_factory,
+                                                 environment_factory):
+            evaluation = evaluate(table, agent_factory, environment_factory)
             # print(" R: " + str(evaluation))
             mean = None
             variance = None
@@ -107,8 +93,8 @@ def run_experiment(num_trials, num_evaluations,
     return series, evaluations_mean, evaluations_variance, confidences
 
 
-def evaluate(table, agent_factory) -> float:
-    domain, task = configure_gridworld()
+def evaluate(table, agent_factory, environment_factory) -> float:
+    domain, task = environment_factory()
     agent = agent_factory(domain, task)
     agent.value_function = table
     agent.epsilon = 0.0
@@ -128,15 +114,14 @@ def evaluate(table, agent_factory) -> float:
 
         if task.stateisfinal(domain.get_current_state()) or current_step > max_steps:
             terminated = True
-            domain.reset()
             cumulative_reward = agent.get_cumulative_reward()
             agent.episode_ended()
 
-    # print(plot_trajectory(trajectory))
+    save_composition("eval", domain)
     return cumulative_reward
 
 
-def train_agent(evaluation_period, num_stops, agent_factory):
+def train_agent(evaluation_period, num_stops, agent_factory, environment_factory):
     """
     Trains an agent, periodically yielding the agent's q-table
     :param evaluation_period:
@@ -146,7 +131,7 @@ def train_agent(evaluation_period, num_stops, agent_factory):
     :param alpha:
     :return:
     """
-    domain, task = configure_gridworld()
+    domain, task = environment_factory()
     agent = agent_factory(domain, task)
 
     stops = 0
@@ -172,28 +157,38 @@ def train_agent(evaluation_period, num_stops, agent_factory):
                 terminated = True
 
 
-def configure_environment(given_voices: List[Voice]) -> Tuple[Domain, Task]:
-    domain = CompositionEnvironment(1, [])
-    task = SpeciesOneCounterpoint()
-    return domain, task
+def make_environment_factory(given_voices: List[Voice], meter=Meter(4, 4), key=KeySignature('c', 'major')):
+    def generate_environment() -> Tuple[Domain, Task]:
+        domain = CompositionEnvironment(2, given_voices, meter, key)
+        task = SpeciesOneCounterpoint(domain,
+                                      [(NamedPitch("C3"), NamedPitch("C5")), (NamedPitch("C2"), NamedPitch("C4"))])
+        return domain, task
+
+    return generate_environment
 
 
-def agent_factory(initial_value=0.5,
-                  epsilon=0.1,
-                  alpha=0.2,
-                  lmbda=0.95,
-                  expected=False, true_online=False, q_learning=False):
+def make_agent_factory(initial_value=0.5,
+                       epsilon=0.1,
+                       alpha=0.2,
+                       lmbda=0.95,
+                       expected=False, true_online=False, q_learning=False):
     def generate_agent(domain, task):
         if true_online:
             agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
         elif q_learning:
             agent = QLearning(domain, task)
         else:
-            agent = SarsaAgent(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
+            agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
         return agent
 
     return generate_agent
 
+
+def save_composition(name: str, composition: CompositionEnvironment):
+    lilypond_file = lilypondfiletools.make_basic_lilypond_file(composition.given_voices[0])
+    filename = name + ".ly"
+    with open("results/" + filename, mode="w") as f:
+        f.write(format(lilypond_file))
 
 if __name__ == '__main__':
     main()

@@ -12,10 +12,12 @@ class SpeciesOneCounterpoint(Task):
         self.domain = domain
         self.voice_ranges = voice_ranges
         self.measures = measures
+        self.total_beats = measures * domain.meter.denominator
 
     def stateisfinal(self, state: CompositionState):
-        if self.domain.total_beats == state
-            pass
+        if self.total_beats == state.beat:
+            return True
+        return False
 
     def reward(self, state, action, state_prime):
-        pass
+        return -1
