@@ -8,7 +8,7 @@ from rl.task import Task
 from rl.valuefunction.tabular import StateActionValueTable
 
 
-class QLearning(Agent):
+class Sarsa(Agent):
     def __init__(self, domain: Domain, task: Task, epsilon=0.1, alpha=0.6, gamma=0.95, lamb=0.95, expected=False):
         """
         :param domain: The world the agent is placed in.
@@ -20,6 +20,8 @@ class QLearning(Agent):
         self.epsilon = epsilon
         self.alpha = alpha
         self.gamma = gamma
+        self.lamb = lamb
+        self.expected = expected
         self.previousaction = None
         self.previousstate = None
 
@@ -33,24 +35,24 @@ class QLearning(Agent):
         state = self.domain.get_current_state()
         action = self.choose_action(state)
 
-        self.previousstate = state
-        self.previousaction = action
-
         self.world.apply_action(action)
-        state_prime = self.world.get_current_state()
 
-        if self.task.stateisfinal(state_prime):
-            terminal = True
-        else:
-            terminal = False
-
-        self.update(state, action, state_prime, terminal=terminal)
-
-        if terminal:
+        # For the first time step, we won't have received a reward yet.
+        # We're just notifying the learner of our starting state and action.
+        if self.previousstate is None and self.previousaction is None:
             ()
+        else:
+            self.update(self.previousstate, self.previousaction, state, action)
+
+        self.previousaction = action
+        self.previousstate = state
+
+        state_prime = self.world.get_current_state()
+        if self.task.stateisfinal(state_prime):
+            self.update(state, action, state_prime, None, terminal=True)
             # print(self._log_policy() + " " + str(self.current_cumulative_reward))
 
-    def update(self, state: State, action: Action, state_prime: State, terminal=False):
+    def update(self, state: State, action: Action, state_prime: State, action_prime: Action, terminal=False):
         reward = self.task.reward(state, action, state_prime)
         old_value = self.value_function.actionvalue(state, action)
 
@@ -58,8 +60,11 @@ class QLearning(Agent):
         if terminal:
             target = 0
         else:
-            best_action = list(self.value_function.bestactions(state_prime))[0]
-            target = self.value_function.actionvalue(state_prime, best_action)
+            if self.expected:
+                target = self.expected_value(state_prime)
+
+            else:
+                target = self.value_function.actionvalue(state_prime, action_prime)
 
         error = reward + self.gamma * target - old_value
         new_value = old_value + self.alpha * error

@@ -1,11 +1,11 @@
 from abc import abstractmethod
 
-from .action import Action
-from .domain import Domain
-from .task import Task
+from rl.action import Action
+from rl.domain import Domain
+from rl.task import Task
 
 
-class Agent(object):
+class Agent:
     """
     An agent takes actions from the action space and applies them to the
     world. Its knowledge comes from the states returned by the world.

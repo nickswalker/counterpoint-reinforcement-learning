@@ -20,7 +20,6 @@ class StateActionValueTable:
             for a in self.actions:
                 entry[a] = 0.0
             self.table[state] = entry
-
         return self.table[state][action]
 
     def setactionvalue(self, state: State, action: Action, value: float):
