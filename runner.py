@@ -6,13 +6,15 @@ import numpy as np
 import scipy as scipy
 import scipy.stats
 from abjad.tools import lilypondfiletools
+from abjad.tools import markuptools
+from abjad.tools import scoretools
 from abjad.tools.indicatortools.KeySignature import KeySignature
 from abjad.tools.metertools.Meter import Meter
-from abjad.tools.pitchtools.NamedPitch import NamedPitch
 from abjad.tools.scoretools import Voice
 
 from cantus_firmi import cantus_firmi
 from counterpoint.composition_environment import CompositionEnvironment
+from counterpoint.constants import soprano_range
 from counterpoint.species_counterpoint import SpeciesOneCounterpoint
 from rl.agent.qlearning import QLearning
 from rl.agent.sarsa import Sarsa
@@ -117,7 +119,7 @@ def evaluate(table, agent_factory, environment_factory) -> float:
             cumulative_reward = agent.get_cumulative_reward()
             agent.episode_ended()
 
-    save_composition("eval", domain)
+    save_composition("eval", "Q-learning", domain)
     return cumulative_reward
 
 
@@ -159,9 +161,8 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
 
 def make_environment_factory(given_voices: List[Voice], meter=Meter(4, 4), key=KeySignature('c', 'major')):
     def generate_environment() -> Tuple[Domain, Task]:
-        domain = CompositionEnvironment(2, given_voices, meter, key)
-        task = SpeciesOneCounterpoint(domain,
-                                      [(NamedPitch("C3"), NamedPitch("C5")), (NamedPitch("C2"), NamedPitch("C4"))])
+        domain = CompositionEnvironment(1, given_voices, [soprano_range], meter, key)
+        task = SpeciesOneCounterpoint(domain)
         return domain, task
 
     return generate_environment
@@ -184,8 +185,15 @@ def make_agent_factory(initial_value=0.5,
     return generate_agent
 
 
-def save_composition(name: str, composition: CompositionEnvironment):
+def save_composition(name: str, agent_name: str, composition: CompositionEnvironment):
     lilypond_file = lilypondfiletools.make_basic_lilypond_file(composition.given_voices[0])
+    lilypond_file.header_block.composer = markuptools.Markup(agent_name)
+    lilypond_file.header_block.title = markuptools.Markup(name)
+
+    staff_group = scoretools.StaffGroup([], context_name='StaffGroup')
+
+    for voice in composition.voices + composition.given_voices:
+        staff_group.append(voice)
     filename = name + ".ly"
     with open("results/" + filename, mode="w") as f:
         f.write(format(lilypond_file))

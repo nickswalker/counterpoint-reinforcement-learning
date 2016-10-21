@@ -34,7 +34,8 @@ class CompositionAction(Action):
 
 
 class CompositionEnvironment(Domain):
-    def __init__(self, number_of_voices_to_generate: int, given_voices: List[Voice], meter: Meter, key: KeySignature):
+    def __init__(self, number_of_voices_to_generate: int, given_voices: List[Voice],
+                 voice_ranges: List[Tuple[NamedPitch, NamedPitch]], meter: Meter, key: KeySignature):
         assert meter.is_simple
         self.key = key
         self.meter = meter
@@ -44,22 +45,10 @@ class CompositionEnvironment(Domain):
         self.voices = [Staff("") for i in range(number_of_voices_to_generate)]
         self.current_beat = 0
 
+        self.actions = self.generate_actions(voice_ranges)
+
     def get_actions(self, state: State) -> Set[Action]:
-        possible_pitches_per_voice = []
-        for i in range(self.number_of_voices_to_generate):
-            possible_pitches_per_voice.append([NamedPitch("C4")])
-        possible_durations_per_voice = [[1] for _ in range(self.number_of_voices_to_generate)]
-        actions = []
-
-        notes_per_voice = []
-        for i in range(self.number_of_voices_to_generate):
-            notes_per_voice.append([])
-            for pitch, duration in itertools.product(possible_pitches_per_voice[i], possible_durations_per_voice[i]):
-                notes_per_voice[i].append(HashableNote(pitch, duration))
-
-        for notes in itertools.product(*notes_per_voice):
-            actions.append(CompositionAction(notes))
-        return actions
+        return self.actions
 
     def get_current_state(self) -> State:
         notes_in_voices = []
@@ -80,3 +69,24 @@ class CompositionEnvironment(Domain):
     def reset(self):
         self.voices = [Staff("") for i in range(self.number_of_voices_to_generate)]
         self.current_beat = 0
+
+    def generate_actions(self, voice_ranges):
+        possible_pitches_per_voice = []
+        for i in range(self.number_of_voices_to_generate):
+            possible_pitches_per_voice.append([])
+            current_pitch = voice_ranges[i][0].numbered_pitch
+            while current_pitch <= voice_ranges[i][1]:
+                possible_pitches_per_voice[i].append(current_pitch)
+                current_pitch = current_pitch + 1
+        possible_durations_per_voice = [[1] for _ in range(self.number_of_voices_to_generate)]
+        actions = []
+
+        notes_per_voice = []
+        for i in range(self.number_of_voices_to_generate):
+            notes_per_voice.append([])
+            for pitch, duration in itertools.product(possible_pitches_per_voice[i], possible_durations_per_voice[i]):
+                notes_per_voice[i].append(HashableNote(pitch, duration))
+
+        for notes in itertools.product(*notes_per_voice):
+            actions.append(CompositionAction(notes))
+        return actions
