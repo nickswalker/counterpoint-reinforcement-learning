@@ -8,9 +8,11 @@ import scipy.stats
 from abjad.tools import lilypondfiletools
 from abjad.tools import markuptools
 from abjad.tools import scoretools
-from abjad.tools.indicatortools.KeySignature import KeySignature
-from abjad.tools.metertools.Meter import Meter
+from abjad.tools.indicatortools.Clef import Clef
 from abjad.tools.scoretools import Voice
+from abjad.tools.scoretools.Score import Score
+from abjad.tools.scoretools.Staff import Staff
+from abjad.tools.topleveltools.attach import attach
 
 from cantus_firmi import cantus_firmi
 from counterpoint.composition_environment import CompositionEnvironment
@@ -40,7 +42,10 @@ def main():
                    delimiter=",")
 
     if experiment_num == 0:
-        environment_factory = make_environment_factory([cantus_firmi[0]])
+        cantus = cantus_firmi[0][0]
+        meter = cantus_firmi[0][1]
+        key = cantus_firmi[0][2]
+        environment_factory = make_environment_factory([cantus], meter, key)
         agent_factory = make_agent_factory(q_learning=True)
         q_learning_results = run_experiment(num_trials, num_evaluations, agent_factory, environment_factory)
         save("Q-learning", q_learning_results)
@@ -159,9 +164,9 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
                 terminated = True
 
 
-def make_environment_factory(given_voices: List[Voice], meter=Meter(4, 4), key=KeySignature('c', 'major')):
+def make_environment_factory(given_voices: List[Voice], meter, key):
     def generate_environment() -> Tuple[Domain, Task]:
-        domain = CompositionEnvironment(1, given_voices, [soprano_range], meter, key)
+        domain = CompositionEnvironment(given_voices, [("contrapuntal", soprano_range)], meter, key)
         task = SpeciesOneCounterpoint(domain)
         return domain, task
 
@@ -186,14 +191,23 @@ def make_agent_factory(initial_value=0.5,
 
 
 def save_composition(name: str, agent_name: str, composition: CompositionEnvironment):
-    lilypond_file = lilypondfiletools.make_basic_lilypond_file(composition.given_voices[0])
-    lilypond_file.header_block.composer = markuptools.Markup(agent_name)
-    lilypond_file.header_block.title = markuptools.Markup(name)
-
+    score = Score()
     staff_group = scoretools.StaffGroup([], context_name='StaffGroup')
 
     for voice in composition.voices + composition.given_voices:
-        staff_group.append(voice)
+        staff = Staff([voice])
+        if voice.name == "cantus":
+            attach(Clef("bass"), staff)
+        attach(composition.key, staff)
+        staff_group.append(staff)
+    score.append(staff_group)
+    score.add_final_bar_line()
+
+    lilypond_file = lilypondfiletools.make_basic_lilypond_file(score)
+    lilypond_file.header_block.composer = markuptools.Markup(agent_name)
+    lilypond_file.header_block.title = markuptools.Markup(name)
+
+
     filename = name + ".ly"
     with open("results/" + filename, mode="w") as f:
         f.write(format(lilypond_file))
