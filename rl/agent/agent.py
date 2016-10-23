@@ -11,9 +11,10 @@ class Agent:
     world. Its knowledge comes from the states returned by the world.
     """
 
-    def __init__(self, domain: Domain, task: Task):
+    def __init__(self, domain: Domain, task: Task, name=None):
         self.domain = domain
         self.task = task
+        self.name = name
 
     @abstractmethod
     def act(self):

@@ -9,9 +9,11 @@ from abjad.tools import lilypondfiletools
 from abjad.tools import markuptools
 from abjad.tools import scoretools
 from abjad.tools.indicatortools.Clef import Clef
+from abjad.tools.metertools.Meter import Meter
 from abjad.tools.scoretools import Voice
 from abjad.tools.scoretools.Score import Score
 from abjad.tools.scoretools.Staff import Staff
+from abjad.tools.tonalanalysistools.Scale import Scale
 from abjad.tools.topleveltools.attach import attach
 
 from cantus_firmi import cantus_firmi
@@ -57,6 +59,7 @@ def run_experiment(num_trials, num_evaluations,
     assert num_trials > 1
     evaluations_mean = []
     evaluations_variance = []
+    evaluation_num = 0
     series = [i * evaluation_period for i in range(0, num_evaluations)]
     n = 0
     for i in range(0, num_trials):
@@ -67,8 +70,9 @@ def run_experiment(num_trials, num_evaluations,
                                                  num_evaluations,
                                                  agent_factory,
                                                  environment_factory):
-            evaluation = evaluate(table, agent_factory, environment_factory)
-            # print(" R: " + str(evaluation))
+            evaluation = evaluate(table, agent_factory, environment_factory, "Evaluation %d" % evaluation_num)
+            evaluation_num += 1
+            print(" R: " + str(evaluation))
             mean = None
             variance = None
             if j > len(evaluations_mean) - 1:
@@ -100,7 +104,7 @@ def run_experiment(num_trials, num_evaluations,
     return series, evaluations_mean, evaluations_variance, confidences
 
 
-def evaluate(table, agent_factory, environment_factory) -> float:
+def evaluate(table, agent_factory, environment_factory, unique_name: str) -> float:
     domain, task = environment_factory()
     agent = agent_factory(domain, task)
     agent.value_function = table
@@ -108,23 +112,19 @@ def evaluate(table, agent_factory, environment_factory) -> float:
     agent.alpha = 0.0
     cumulative_reward = 0.0
     terminated = False
-    max_steps = 200
     current_step = 0
 
-    trajectory = []
 
     while not terminated:
         current_step += 1
         agent.act()
 
-        trajectory.append((agent.previousstate, agent.previousaction))
-
-        if task.stateisfinal(domain.get_current_state()) or current_step > max_steps:
+        if task.stateisfinal(domain.get_current_state()):
             terminated = True
             cumulative_reward = agent.get_cumulative_reward()
             agent.episode_ended()
 
-    save_composition("eval", "Q-learning", domain)
+    save_composition(unique_name, agent.name, domain)
     return cumulative_reward
 
 
@@ -133,9 +133,7 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
     Trains an agent, periodically yielding the agent's q-table
     :param evaluation_period:
     :param num_stops:
-    :param initial_value:
-    :param epsilon:
-    :param alpha:
+
     :return:
     """
     domain, task = environment_factory()
@@ -164,9 +162,9 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
                 terminated = True
 
 
-def make_environment_factory(given_voices: List[Voice], meter, key):
+def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale):
     def generate_environment() -> Tuple[Domain, Task]:
-        domain = CompositionEnvironment(given_voices, [("contrapuntal", soprano_range)], meter, key)
+        domain = CompositionEnvironment(given_voices, [("contrapuntal", soprano_range)], meter, scale)
         task = SpeciesOneCounterpoint(domain)
         return domain, task
 
@@ -177,7 +175,7 @@ def make_agent_factory(initial_value=0.5,
                        epsilon=0.1,
                        alpha=0.2,
                        lmbda=0.95,
-                       expected=False, true_online=False, q_learning=False):
+                       expected=False, true_online=False, q_learning=False, name=""):
     def generate_agent(domain, task):
         if true_online:
             agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
@@ -198,7 +196,7 @@ def save_composition(name: str, agent_name: str, composition: CompositionEnviron
         staff = Staff([voice])
         if voice.name == "cantus":
             attach(Clef("bass"), staff)
-        attach(composition.key, staff)
+        attach(composition.scale.key_signature, staff)
         staff_group.append(staff)
     score.append(staff_group)
     score.add_final_bar_line()
