@@ -61,6 +61,7 @@ class CompositionEnvironment(Domain):
             previous_note = None
             if len(voice) > 0:
                 previous_note = voice[len(voice) - 1]
+            previous_note = HashableNote(str(previous_note)) if previous_note is not None else None
             notes_in_voices.append(tuple([previous_note]))
 
         for given_voice in self.given_voices:
@@ -91,7 +92,7 @@ class CompositionEnvironment(Domain):
         self.current_duration = inspect_(self.voices[0]).get_duration()
 
     def reset(self):
-        self.voices = [Staff("") for i in range(self.number_of_voices_to_generate)]
+        self.voices = [Voice("") for i in range(self.number_of_voices_to_generate)]
         self.current_duration = Duration(0)
 
     def generate_actions(self):
