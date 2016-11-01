@@ -41,8 +41,8 @@ class SpeciesOneCounterpoint(CounterpointTask):
     def reward(self, state: CompositionState, action: CompositionAction, state_prime: CompositionState):
         current_reward = 0
 
-        current_upper_pitch = state_prime.voices[0][0]
-        current_lower_pitch = state_prime.voices[1][0]
+        current_upper_pitch = state_prime.voices[0][0].written_pitch
+        current_lower_pitch = state_prime.voices[1][0].written_pitch
 
         harmonic_intervals, melodic_intervals = self.last_n_intervals(3, self.domain.current_duration,
                                                                       self.domain.voices[0],
@@ -75,6 +75,8 @@ class SpeciesOneCounterpoint(CounterpointTask):
         # If there's more than one note then we can look at the melodic intervals
         contrapuntal_melodic_interval = melodic_intervals[0][-1]
         cantus_melodic_interval = melodic_intervals[0][-1]
+
+        direction = self.characterize_relative_motion(contrapuntal_melodic_interval, cantus_melodic_interval)
         if contrapuntal_melodic_interval is NamedInterval("P1"):
             current_reward -= 1
         elif contrapuntal_melodic_interval in constants.dissonant_intervals:
@@ -145,3 +147,13 @@ class SpeciesOneCounterpoint(CounterpointTask):
             return None
         else:
             return NamedInterval.from_pitch_carriers(first, second)
+
+    def characterize_relative_motion(self, upper_motion: NamedInterval, lower_motion: NamedInterval) -> Motion:
+        # NOTE: handle double unison
+        if upper_motion.direction_string == lower_motion.direction_string:
+            if upper_motion.interval_string == lower_motion.interval_string:
+                return Motion.parallel
+            else:
+                return Motion.similar
+        else:
+            return Motion.contrary

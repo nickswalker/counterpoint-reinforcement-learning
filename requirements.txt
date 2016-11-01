@@ -1,1 +1,3 @@
 abjad
+numpy
+scipy
