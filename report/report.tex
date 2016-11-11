@@ -8,33 +8,38 @@
 \usepackage{bm}
 
 \usepackage[utf8]{inputenc}
-
+% Palatino
 \usepackage{mathpazo}
+%\usepackage{times} % Uncomment to use the Times New Roman font
 \usepackage[T1]{fontenc}
 \usepackage{textcomp}
 \usepackage{gensymb}
 \usepackage{mathtools}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
-
+\usepackage{multicol}
+\usepackage[letterpaper, portrait]{geometry}
+ \geometry{
+ letterpaper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+ bottom=20mm
+ }
+\setlength{\columnsep}{10mm}
 
 \usepackage{amsmath,amsfonts,amssymb}
 
-\setlength\parindent{0pt} % Removes all indentation from paragraphs
-
 \renewcommand{\labelenumi}{\alph{enumi}.} % Make numbering in the enumerate environment by letter rather than number (e.g. section 6)
-
-%\usepackage{times} % Uncomment to use the Times New Roman font
 
 %----------------------------------------------------------------------------------------
 %	DOCUMENT INFORMATION
 %----------------------------------------------------------------------------------------
 
-\title{Reinforcement Learning for Music Composition} % Title
+\title{A Reinforcement Learning Agent for Species Counterpoint Composition}
 
-\author{\textsc{Nick Walker}} % Author name
-
-\date{\today} % Date for the report
+\author{\textsc{Nick Walker}}
+\date{\today}
 
 \begin{document}
 
@@ -42,18 +47,12 @@
 
 
 	%----------------------------------------------------------------------------------------
-	%	SECTION 1
+	%	ABSTRACT
 	%----------------------------------------------------------------------------------------
-
-	\section{Abstract}
-
-	\section{Related works}
-	
-	test \cite{Phon-Amnuaisuk2009}.
-
-
-
-
+\begin{multicols}{2}
+	\begin{abstract}
+	This paper presents a knowledge representation and reinforcement learning formulation for a counterpoint composition agent. Its performance is evaluated on the five traditional species counterpoint tasks.
+	\end{abstract}
 
 	%----------------------------------------------------------------------------------------
 	%	SECTION 2
@@ -61,9 +60,28 @@
 
 	\section{Introduction}
 
-	\subsection{Task}
+Computer music research focuses on three main tasks; \textit{composition}, in which the agent creates new music, \textit{expression} in which the agent performs existing compositions, and \textit{improvisation}, in which the agent creates music in real-time as a reaction to its context.  While many researchers have applied artificial intelligence methods to  musical tasks, there  is a relative dearth of work that evaluates the usefulness of reinforcement learning methods. This is perhaps because of the difficulty of defining a reward signal.
 
+\textit{Counterpoint}, a composition sub task that involves the creation of  multiple independent but musically entwined voices, is one area of music that is particularly amenable to a reinforcement learning formulation. Species counterpoint is a series of five constrained versions of counterpoint, variously forbidding  different harmonic intervals, rhythms or other musical characteristics \cite{Kostka2012}. These tasks have very well defined rules which can be translated into a reward function that provides useful one-step feedback to a learner.
 
+This work uses reinforcement learning to implement a species counterpoint agent. The challenge remains of defining a state and action representation that can support learning across the array of species tasks. To this end, we outline the different musical subtleties that the agent needs to be able to distinguish, provide a representation, and empirically evaluate the approach.
+
+	\section{Related Works}
+    Researchers have applied a variety of artificial intelligence methods to algorithmic composition tasks.
+
+    The use of genetic algorithms for algorithmic composition, and in particular musical imitation tasks, has been explored extensively over the last three decades \cite{Miranda:2007:ECM:1197666}. Many researchers have had success with species counterpoint fitness functions, but the difficulty of providing an automatic fitness function for more sophisticated composition tasks has spawned many \textit{interactive genetic algorithm} based systems, which use human input to measure population performance \cite{Fernandez:2013:AMA:2591248.2591260}. The most significant example is Biles' \textit{GenJam} system, which processes human provided binary clicker feedback into measure- and phrase-level evaluative feedback \cite{Biles94genjam:a}.  Recent research has explored the use of multiple fitness functions. Scirea implemented a system to optimize three fitness functions which encoded harmonic and melodic characteristics \cite{Scirea2016}. The approach evaluated  generations by a set of fixed feasibility constraints, then performed multiobjective optimization on the feasible population to produce melodies. The use of multiple explicit objective functions promoted the generation of pieces that  only  partially satisfied each of them.  Because it blended several general principles, a qualitative evaluation was required to validate that the output produced was musical. In contrast, this work uses well defined tasks and eschews most issues of subjective musical taste, focusing instead on learning performance as its main evaluation metric.
+
+ 	There have been many constraint based approaches to the algorithmic composition task. Boenn et. al. used Answer Set Programming to implement the rules of species counterpoint in \textit{Anton}. The user may elect to provide additional constraints, in the form of notes or a key, then a composition can be generated by selecting a random solution from the answer set defined by both his and the system's constraints \cite{Boenn2008}. In general however, modeling composition as a strict constraint satisfaction is not only inflexible, but also computationally unfeasible. Some work has investigated parameterized soft constraints that can be layered over more conventional generative models. Papadopoulos et. al. combined Markov-chains built from a corpus with parametric meter and harmony constraints that encouraged higher level structure \cite{Papadopoulos2016}. Their method allows human input in the form of parameter choices and corpus selection.
+
+    There have been several direct applications of reinforcement learning to composition. Work by Smith used multiple Adaptive Resonance Theory (ART) neural networks, which implement a self organization scheme thought to reflect human cognition, to implement an agent that sought novel pitch and phrasal variations. The agent was intrinsically motivated, learning a reward signal that encouraged increases in model entropy \cite{Smith2012}. Work by Cont uses Dyna-Q with a cognitively inspired reward and update scheme. During training, the reward signal reinforces states that are prefixes of musical sequences in a corpus, and during evaluation it penalizes states that are prefixes to the most recently composed notes \cite{cont:hal-00839073}. Both approaches tap theories of music cognition, hoping to create emergent creative behavior, but ultimately struggle to generate palatable output. In contrast, this work seeks only to use reinforcement learning to learn to compose strict counterpoint.
+
+	The work most similar to this paper is Phon-Amnuasuk's Sarsa agent for two-part species counterpoint \cite{Phon-Amnuaisuk2009}. It used a tabular representation where states were pitches and actions were interval movements relative to the previous pitch. The agent observes states and composes the next notes for each line jointly in one timestep. Their reward function implemented a subset of species one counterpoint, and lacks sufficient expressive capability to learn the effect of different note durations, something required by higher orders of species counterpoint. In contrast, this work develops an approach that is designed to be used with a value function approximation scheme and that is meant to be used across different species.
+
+	Although improvisation approaches face unique difficulties, they share many representational concerns with composition approaches. Instead of attempting to store all states, Collin's \textit{Improvagent} used a small tabular representation built up out of cases, sequences of notes observed from a human performer \cite{collins2008reinforcement}. Thom's \textit{Band-out-of-the-Box} system learns to play solos with a human companion using a novel variable length tree representation, and a set of conglomerative features. These features–-histograms of previous pitches, intervals and movement directions-–are a useful method of abstracting the overall musical structure of a composition, and are used in this work to promote generalization.
+
+	\section{Background}
+    (Musical definitions, brief historical context, enough explanation to make tasks and representation understandable)
+    \section{Approach}
 	\section{Experimental Setup}
 
 	%----------------------------------------------------------------------------------------
@@ -73,15 +91,14 @@
 
 	\section{Results}
 
-
-	\subsection{Discussion}
-
 	%----------------------------------------------------------------------------------------
 	%	SECTION 5
 	%----------------------------------------------------------------------------------------
 
 	\section{Conclusions}
 
+    \section{Acknowledgments}
 	\bibliography{references}{}
 	\bibliographystyle{plain}
+    \end{multicols}
 \end{document}
