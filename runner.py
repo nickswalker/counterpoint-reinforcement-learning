@@ -1,4 +1,3 @@
-import copy
 import sys
 from typing import Tuple, List
 
@@ -19,14 +18,14 @@ from abjad.tools.topleveltools.attach import attach
 from cantus_firmi import cantus_firmi
 from counterpoint.composition_environment import CompositionEnvironment
 from counterpoint.constants import soprano_range
-from counterpoint.species_counterpoint import SpeciesOneCounterpoint
+from counterpoint.species_counterpoint import SpeciesOneCounterpoint, ThirdsAreGoodTask, CounterpointTask
 from rl.agent.qlearning import QLearning
 from rl.agent.sarsa import Sarsa
 from rl.agent.trueonlinesarsalambda import TrueOnlineSarsaLambda
 from rl.domain import Domain
 from rl.task import Task
 
-evaluation_period = 50
+evaluation_period = 10
 significance_level = 0.05
 
 stochasticity = 0.0
@@ -42,8 +41,15 @@ def main():
         np.savetxt("results/" + str(experiment_num) + "_" + str(num_trials) + "_" + name + ".csv", data,
                    fmt=["%d", "%f", "%f", "%f"],
                    delimiter=",")
-
     if experiment_num == 0:
+        cantus = cantus_firmi[0][0]
+        meter = cantus_firmi[0][1]
+        key = cantus_firmi[0][2]
+        environment_factory = make_environment_factory([cantus], meter, key, ThirdsAreGoodTask)
+        agent_factory = make_agent_factory(q_learning=True)
+        q_learning_results = run_experiment(num_trials, num_evaluations, agent_factory, environment_factory)
+        save("Q-learning", q_learning_results)
+    elif experiment_num == 1:
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
@@ -51,6 +57,7 @@ def main():
         agent_factory = make_agent_factory(q_learning=True)
         q_learning_results = run_experiment(num_trials, num_evaluations, agent_factory, environment_factory)
         save("Q-learning", q_learning_results)
+
 
 
 def run_experiment(num_trials, num_evaluations,
@@ -144,7 +151,7 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
         if i % evaluation_period is 0:
             # print(i)
             stops += 1
-            yield i, copy.deepcopy(agent.value_function)
+            yield i, agent.value_function
 
         if num_stops == stops:
             return
@@ -162,10 +169,11 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
                 terminated = True
 
 
-def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale):
+def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale,
+                             task_class: CounterpointTask = SpeciesOneCounterpoint):
     def generate_environment() -> Tuple[Domain, Task]:
         domain = CompositionEnvironment(given_voices, [("contrapuntal", soprano_range)], meter, scale)
-        task = SpeciesOneCounterpoint(domain)
+        task = task_class(domain)
         return domain, task
 
     return generate_environment
@@ -173,9 +181,9 @@ def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Sca
 
 def make_agent_factory(initial_value=0.5,
                        epsilon=0.1,
-                       alpha=0.2,
+                       alpha=0.5,
                        lmbda=0.95,
-                       expected=False, true_online=False, q_learning=False, name=""):
+                       expected=False, true_online=False, q_learning=False):
     def generate_agent(domain, task):
         if true_online:
             agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)

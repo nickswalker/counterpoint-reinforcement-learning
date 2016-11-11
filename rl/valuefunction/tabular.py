@@ -23,7 +23,15 @@ class StateActionValueTable:
         return self.table[state][action]
 
     def setactionvalue(self, state: State, action: Action, value: float):
-        self.table[state][action] = value
+        entry = self.table.get(state)
+        if entry is None:
+            entry = dict()
+            for action in self.actions:
+                entry[action] = 0.0
+            self.table[state] = entry
+            self.table[state][action] = value
+        else:
+            self.table[state][action] = value
 
     def bestactions(self, state: State) -> Set[Action]:
         entry = self.table.get(state)
