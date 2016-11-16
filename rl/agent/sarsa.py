@@ -10,6 +10,7 @@ from rl.valuefunction.tabular import StateActionValueTable
 
 class Sarsa(Agent):
     def __init__(self, domain: Domain, task: Task, epsilon=0.1, alpha=0.6, gamma=0.95, lamb=0.95, expected=False,
+                 feature_extractor=None,
                  name="Sarsa"):
         """
         :param domain: The world the agent is placed in.
@@ -51,7 +52,6 @@ class Sarsa(Agent):
         state_prime = self.world.get_current_state()
         if self.task.stateisfinal(state_prime):
             self.update(state, action, state_prime, None, terminal=True)
-            # print(self._log_policy() + " " + str(self.current_cumulative_reward))
 
     def update(self, state: State, action: Action, state_prime: State, action_prime: Action, terminal=False):
         reward = self.task.reward(state, action, state_prime)

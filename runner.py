@@ -1,117 +1,102 @@
+import os
 import sys
-from typing import Tuple, List
 
 import numpy as np
-import scipy as scipy
-import scipy.stats
-from abjad.tools import lilypondfiletools
-from abjad.tools import markuptools
-from abjad.tools import scoretools
-from abjad.tools.indicatortools.Clef import Clef
-from abjad.tools.metertools.Meter import Meter
-from abjad.tools.scoretools import Voice
-from abjad.tools.scoretools.Score import Score
-from abjad.tools.scoretools.Staff import Staff
-from abjad.tools.tonalanalysistools.Scale import Scale
-from abjad.tools.topleveltools.attach import attach
 
 from cantus_firmi import cantus_firmi
-from counterpoint.composition_environment import CompositionEnvironment
-from counterpoint.constants import soprano_range
-from counterpoint.species_counterpoint import SpeciesOneCounterpoint, ThirdsAreGoodTask, CounterpointTask
-from rl.agent.qlearning import QLearning
-from rl.agent.sarsa import Sarsa
-from rl.agent.trueonlinesarsalambda import TrueOnlineSarsaLambda
-from rl.domain import Domain
-from rl.task import Task
+from counterpoint.species_counterpoint import ThirdsAreGoodTask, UnisonsAreGoodTask
+from utilities.factories import make_environment_factory, make_agent_factory
+from utilities.save_composition import save_composition
+from utilities.trial_log import ExperimentLog
 
-evaluation_period = 10
 significance_level = 0.05
-
-stochasticity = 0.0
 
 
 def main():
+    assert len(sys.argv) == 6
     experiment_num = int(sys.argv[1])
-    num_evaluations = int(sys.argv[2])
-    num_trials = int(sys.argv[3])
+    num_trials = int(sys.argv[2])
+    num_evaluations = int(sys.argv[3])
+    evaluation_period = int(sys.argv[4])
+    output_dir = sys.argv[5]
 
-    def save(name, results):
-        data = np.c_[results]
-        np.savetxt("results/" + str(experiment_num) + "_" + str(num_trials) + "_" + name + ".csv", data,
+    def save(name, log: ExperimentLog, out_dir: str):
+        out_prefix = os.path.join(output_dir, out_dir)
+        if not os.path.exists(out_prefix):
+            os.makedirs(out_prefix)
+        filename = str(experiment_num) + "_" + str(num_trials) + "_" + name + ".csv"
+        full_out_path = os.path.join(out_prefix, filename)
+        if log.n > 1:
+            log.finalize_confidences()
+            data = np.c_[(log.series, log.means, log.variances, log.confidences)]
+        else:
+            data = np.c_[(log.series, log.means)]
+        np.savetxt(full_out_path, data,
                    fmt=["%d", "%f", "%f", "%f"],
                    delimiter=",")
+
     if experiment_num == 0:
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
         environment_factory = make_environment_factory([cantus], meter, key, ThirdsAreGoodTask)
-        agent_factory = make_agent_factory(q_learning=True)
-        q_learning_results = run_experiment(num_trials, num_evaluations, agent_factory, environment_factory)
-        save("Q-learning", q_learning_results)
+        agent_factory = make_agent_factory(expected=True)
+        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                       environment_factory, str(experiment_num))
+        save("Expected Sarsa", sarsa_results, str(experiment_num))
     elif experiment_num == 1:
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
+        environment_factory = make_environment_factory([cantus], meter, key, UnisonsAreGoodTask)
+        agent_factory = make_agent_factory(expected=True)
+        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                       environment_factory, str(experiment_num))
+        save("Expected Sarsa", sarsa_results, str(experiment_num))
+    elif experiment_num == 2:
+        cantus = cantus_firmi[0][0]
+        meter = cantus_firmi[0][1]
+        key = cantus_firmi[0][2]
+        environment_factory = make_environment_factory([cantus], meter, key, UnisonsAreGoodTask)
+        agent_factory = make_agent_factory(expected=True)
+        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                       environment_factory, str(experiment_num))
+        save("Expected Sarsa", sarsa_results, str(experiment_num))
+    elif experiment_num == 3:
+        cantus = cantus_firmi[0][0]
+        meter = cantus_firmi[0][1]
+        key = cantus_firmi[0][2]
         environment_factory = make_environment_factory([cantus], meter, key)
-        agent_factory = make_agent_factory(q_learning=True)
-        q_learning_results = run_experiment(num_trials, num_evaluations, agent_factory, environment_factory)
-        save("Q-learning", q_learning_results)
+        agent_factory = make_agent_factory(expected=True)
+        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                       environment_factory, str(experiment_num))
+        save("Expected Sarsa", sarsa_results, str(experiment_num))
 
 
-
-def run_experiment(num_trials, num_evaluations,
-                   agent_factory, environment_factory
-                   ):
-    assert num_trials > 1
-    evaluations_mean = []
-    evaluations_variance = []
-    evaluation_num = 0
+def run_experiment(num_trials, num_evaluations, evaluation_period,
+                   agent_factory, environment_factory, out_dir
+                   ) -> ExperimentLog:
     series = [i * evaluation_period for i in range(0, num_evaluations)]
-    n = 0
+    log = ExperimentLog(series, 0.05)
+    evaluation_num = 0
     for i in range(0, num_trials):
         print("trial " + str(i))
-        j = int(0)
-        n += 1
+
+        # Train and periodically yield the value function
         for (num_episodes, table) in train_agent(evaluation_period,
                                                  num_evaluations,
                                                  agent_factory,
                                                  environment_factory):
-            evaluation = evaluate(table, agent_factory, environment_factory, "Evaluation %d" % evaluation_num)
+            evaluation = evaluate(table, agent_factory, environment_factory, "Evaluation %d" % evaluation_num, out_dir)
             evaluation_num += 1
             print(" R: " + str(evaluation))
-            mean = None
-            variance = None
-            if j > len(evaluations_mean) - 1:
-                evaluations_mean.append(0.0)
-                evaluations_variance.append(0.0)
-                mean = 0.0
-                variance = 0.0
-            else:
-                mean = evaluations_mean[j]
-                variance = evaluations_variance[j]
+            log.observe(evaluation)
+        log.observe_trial_end()
 
-            delta = evaluation - mean
-            mean += delta / n
-            variance += delta * (evaluation - mean)
-
-            evaluations_mean[j] = mean
-            evaluations_variance[j] = variance
-            j += 1
-
-    evaluations_variance = [variance / (n - 1) for variance in
-                            evaluations_variance]
-
-    confidences = []
-    for (mean, variance) in zip(evaluations_mean, evaluations_variance):
-        crit = scipy.stats.t.ppf(1.0 - significance_level, n - 1)
-        width = crit * np.math.sqrt(variance) / np.math.sqrt(n)
-        confidences.append(width)
-
-    return series, evaluations_mean, evaluations_variance, confidences
+    return log
 
 
-def evaluate(table, agent_factory, environment_factory, unique_name: str) -> float:
+def evaluate(table, agent_factory, environment_factory, unique_name: str, out_dir: str) -> float:
     domain, task = environment_factory()
     agent = agent_factory(domain, task)
     agent.value_function = table
@@ -120,7 +105,6 @@ def evaluate(table, agent_factory, environment_factory, unique_name: str) -> flo
     cumulative_reward = 0.0
     terminated = False
     current_step = 0
-
 
     while not terminated:
         current_step += 1
@@ -131,7 +115,7 @@ def evaluate(table, agent_factory, environment_factory, unique_name: str) -> flo
             cumulative_reward = agent.get_cumulative_reward()
             agent.episode_ended()
 
-    save_composition(unique_name, agent.name, domain)
+    save_composition(unique_name, agent.name, domain, out_dir)
     return cumulative_reward
 
 
@@ -149,14 +133,14 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
     stops = 0
     for i in range(0, evaluation_period * num_stops):
         if i % evaluation_period is 0:
-            # print(i)
             stops += 1
             yield i, agent.value_function
 
         if num_stops == stops:
             return
         terminated = False
-        max_steps = 200
+
+        print(i)
         current_step = 0
         while not terminated:
             current_step += 1
@@ -169,54 +153,8 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
                 terminated = True
 
 
-def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale,
-                             task_class: CounterpointTask = SpeciesOneCounterpoint):
-    def generate_environment() -> Tuple[Domain, Task]:
-        domain = CompositionEnvironment(given_voices, [("contrapuntal", soprano_range)], meter, scale)
-        task = task_class(domain)
-        return domain, task
-
-    return generate_environment
 
 
-def make_agent_factory(initial_value=0.5,
-                       epsilon=0.1,
-                       alpha=0.5,
-                       lmbda=0.95,
-                       expected=False, true_online=False, q_learning=False):
-    def generate_agent(domain, task):
-        if true_online:
-            agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
-        elif q_learning:
-            agent = QLearning(domain, task)
-        else:
-            agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
-        return agent
-
-    return generate_agent
-
-
-def save_composition(name: str, agent_name: str, composition: CompositionEnvironment):
-    score = Score()
-    staff_group = scoretools.StaffGroup([], context_name='StaffGroup')
-
-    for voice in composition.voices + composition.given_voices:
-        staff = Staff([voice])
-        if voice.name == "cantus":
-            attach(Clef("bass"), staff)
-        attach(composition.scale.key_signature, staff)
-        staff_group.append(staff)
-    score.append(staff_group)
-    score.add_final_bar_line()
-
-    lilypond_file = lilypondfiletools.make_basic_lilypond_file(score)
-    lilypond_file.header_block.composer = markuptools.Markup(agent_name)
-    lilypond_file.header_block.title = markuptools.Markup(name)
-
-
-    filename = name + ".ly"
-    with open("results/" + filename, mode="w") as f:
-        f.write(format(lilypond_file))
 
 if __name__ == '__main__':
     main()
