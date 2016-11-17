@@ -47,9 +47,8 @@ def save_composition(name: str, agent_name: str, composition: CompositionEnviron
     lilypond_file.score_block.items.append(layout_block)
 
     filename = name + ".ly"
-    prefix = "results/" + out_dir + "/"
-    if not os.path.exists(prefix):
-        os.makedirs(prefix)
-
-    with open(prefix + filename, mode="w") as f:
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    out_path = os.path.join(out_dir, filename)
+    with open(out_path, mode="w") as f:
         f.write(format(lilypond_file))

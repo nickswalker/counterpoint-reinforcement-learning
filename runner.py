@@ -21,6 +21,7 @@ def main():
     parser.add_argument('-evaluations', type=int, default=10)
     parser.add_argument('-period', type=int, default=100)
     parser.add_argument('-unique-id', type=int)
+    parser.add_argument('--log-evaluations', type=int)
 
     args = parser.parse_args()
 
@@ -30,12 +31,13 @@ def main():
     evaluation_period = args.period
     output_dir = args.outdir
 
+    def save(name, log: ExperimentLog, out_dir: str, unique_num: int = 0):
 
-    def save(name, log: ExperimentLog, out_dir: str):
-        out_prefix = os.path.join(output_dir, out_dir)
+        out_prefix = out_dir
+
         if not os.path.exists(out_prefix):
             os.makedirs(out_prefix)
-        filename = str(experiment_num) + "_" + str(num_trials) + "_" + name + ".csv"
+        filename = str(experiment_num) + "_" + str(num_trials) + "_" + name + str(unique_num) + ".csv"
         full_out_path = os.path.join(out_prefix, filename)
         if log.n > 1:
             log.finalize_confidences()
@@ -53,8 +55,8 @@ def main():
         environment_factory = make_environment_factory([cantus], meter, key, ThirdsAreGoodTask)
         agent_factory = make_agent_factory(expected=True)
         sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, str(experiment_num))
-        save("Expected Sarsa", sarsa_results, str(experiment_num))
+                                       environment_factory, output_dir)
+        save("Expected Sarsa", sarsa_results, output_dir, args.unique_id)
     elif experiment_num == 1:
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
@@ -62,8 +64,8 @@ def main():
         environment_factory = make_environment_factory([cantus], meter, key, UnisonsAreGoodTask)
         agent_factory = make_agent_factory(expected=True)
         sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, str(experiment_num))
-        save("Expected Sarsa", sarsa_results, str(experiment_num))
+                                       environment_factory, output_dir)
+        save("Expected Sarsa", sarsa_results, output_dir, args.unique_id)
     elif experiment_num == 2:
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
@@ -71,8 +73,8 @@ def main():
         environment_factory = make_environment_factory([cantus], meter, key, UnisonsAreGoodTask)
         agent_factory = make_agent_factory(expected=True)
         sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, str(experiment_num))
-        save("Expected Sarsa", sarsa_results, str(experiment_num))
+                                       environment_factory, output_dir)
+        save("Expected Sarsa", sarsa_results, output_dir, args.unique_id)
     elif experiment_num == 3:
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
@@ -80,8 +82,8 @@ def main():
         environment_factory = make_environment_factory([cantus], meter, key)
         agent_factory = make_agent_factory(expected=True)
         sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, str(experiment_num))
-        save("Expected Sarsa", sarsa_results, str(experiment_num))
+                                       environment_factory, soutput_dir)
+        save("Expected Sarsa", sarsa_results, output_dir, args.unique_id)
 
 
 def run_experiment(num_trials, num_evaluations, evaluation_period,
