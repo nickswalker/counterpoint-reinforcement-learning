@@ -5,15 +5,15 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
     </envs>
-    <option name="SDK_HOME" value="$USER_HOME$/anaconda/bin/python3.5" />
+    <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-    <option name="IS_MODULE_SDK" value="false" />
+    <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="counterpoint-reinforcement-learning" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/runner.py" />
-    <option name="PARAMETERS" value="1 1 10 100 results" />
+    <option name="PARAMETERS" value="1 results" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>

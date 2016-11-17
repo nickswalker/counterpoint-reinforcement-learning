@@ -1,5 +1,5 @@
+import argparse
 import os
-import sys
 
 import numpy as np
 
@@ -13,12 +13,23 @@ significance_level = 0.05
 
 
 def main():
-    assert len(sys.argv) == 6
-    experiment_num = int(sys.argv[1])
-    num_trials = int(sys.argv[2])
-    num_evaluations = int(sys.argv[3])
-    evaluation_period = int(sys.argv[4])
-    output_dir = sys.argv[5]
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("experiment", type=int)
+    parser.add_argument("outdir", type=str)
+    parser.add_argument('-trials', type=int, default=1)
+    parser.add_argument('-evaluations', type=int, default=10)
+    parser.add_argument('-period', type=int, default=100)
+    parser.add_argument('-unique-id', type=int)
+
+    args = parser.parse_args()
+
+    experiment_num = args.experiment
+    num_trials = args.trials
+    num_evaluations = args.evaluations
+    evaluation_period = args.period
+    output_dir = args.outdir
+
 
     def save(name, log: ExperimentLog, out_dir: str):
         out_prefix = os.path.join(output_dir, out_dir)
