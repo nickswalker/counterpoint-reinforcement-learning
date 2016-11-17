@@ -47,6 +47,7 @@ Executable      = $PYTHON_PATH
 Error           = $OUTPUT_DIR/logs/err.\$(cluster)
 Output          = $OUTPUT_DIR/logs/out.\$(cluster)
 Log             = $OUTPUT_DIR/logs/log.\$(cluster)
+Environment     = HOME=tmp/;
 
 +Group = "UNDER"
 +Project = "AI_ROBOTICS"
