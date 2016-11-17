@@ -3,8 +3,8 @@ import unittest
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.pitchtools.NamedPitch import NamedPitch
 
-from counterpoint.HashableNote import HashableNote
 from counterpoint.composition_environment import CompositionAction, CompositionState
+from counterpoint.hashable_note import HashableNote
 from rl.valuefunction.tabular import StateActionValueTable
 
 

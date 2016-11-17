@@ -39,8 +39,8 @@ def make_agent_factory(initial_value=0.5,
             if approximation:
                 agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
             else:
-                agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, expected=expected,
-                              feature_extractor=MusicFeatureExtractor())
+                agent = TrueOnlineSarsaLambda(domain, task, MusicFeatureExtractor(), epsilon=epsilon, alpha=alpha,
+                                              expected=expected)
         return agent
 
     return generate_agent

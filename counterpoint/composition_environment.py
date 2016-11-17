@@ -6,7 +6,7 @@ from abjad.tools.metertools import Meter
 from abjad.tools.pitchtools.PitchRange import PitchRange
 from abjad.tools.tonalanalysistools.Scale import Scale
 
-from counterpoint.HashableNote import HashableNote
+from counterpoint.hashable_note import HashableNote
 from rl.action import Action
 from rl.domain import Domain
 from rl.state import State
