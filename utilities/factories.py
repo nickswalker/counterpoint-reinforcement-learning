@@ -9,6 +9,7 @@ from counterpoint.constants import soprano_range
 from counterpoint.music_features import MusicFeatureExtractor
 from counterpoint.species_counterpoint import CounterpointTask, SpeciesOneCounterpoint
 from rl.agent.qlearning import QLearning
+from rl.agent.qnetworkagent import QNetworkAgent
 from rl.agent.sarsa import Sarsa
 from rl.agent.trueonlinesarsalambda import TrueOnlineSarsaLambda
 from rl.domain import Domain
@@ -29,12 +30,14 @@ def make_agent_factory(initial_value=0.5,
                        epsilon=0.1,
                        alpha=0.5,
                        lmbda=0.95,
-                       expected=False, true_online=False, q_learning=False, approximation=False):
+                       expected=False, true_online=False, q_learning=False, approximation=False, q_network=False):
     def generate_agent(domain, task):
         if true_online:
             agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
         elif q_learning:
             agent = QLearning(domain, task)
+        elif q_network:
+            agent = QNetworkAgent(domain, task, MusicFeatureExtractor())
         else:
             if approximation:
                 agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)

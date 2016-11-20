@@ -5,7 +5,7 @@ from abjad.tools.durationtools import Duration
 from abjad.tools.pitchtools import NamedInterval
 from abjad.tools.scoretools import Voice
 
-from counterpoint.composition_environment import CompositionState, CompositionAction
+from counterpoint.composition_environment import CompositionState
 from rl.valuefunction.FeatureExtractor import FeatureExtractor
 
 
@@ -17,7 +17,7 @@ class Motion(Enum):
 
 
 class MusicFeatureExtractor(FeatureExtractor):
-    def extract(self, state: CompositionState, action: CompositionAction) -> List[float]:
+    def extract(self, state: CompositionState) -> List[float]:
         current_upper_pitch = state.voices[0][0].written_pitch
         current_lower_pitch = state.voices[1][0].written_pitch
 
@@ -25,7 +25,6 @@ class MusicFeatureExtractor(FeatureExtractor):
                                                                                        self.domain.voices[0],
                                                                                        self.domain.given_voices[0])
         features = []
-        features.append(action.notes_per_voice[0])
         pass
 
     def num_features(self) -> int:

@@ -79,6 +79,15 @@ def main():
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
+        environment_factory = make_environment_factory([cantus], meter, key, OnePitchIsGood)
+        agent_factory = make_agent_factory(q_network=True)
+        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                          environment_factory, output_dir)
+        save("Q-network", qnetwork_results, output_dir, args.unique_id)
+    elif experiment_num == 4:
+        cantus = cantus_firmi[0][0]
+        meter = cantus_firmi[0][1]
+        key = cantus_firmi[0][2]
         environment_factory = make_environment_factory([cantus], meter, key)
         agent_factory = make_agent_factory(expected=True, approximation=True)
         sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
