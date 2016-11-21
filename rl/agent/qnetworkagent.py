@@ -1,9 +1,9 @@
+import functools
 from typing import List
 
 import numpy as np
 import tensorflow as tf
 
-from rl import domain
 from rl.action import Action
 from rl.agent.agent import Agent
 from rl.domain import Domain
@@ -19,7 +19,7 @@ class QNetworkAgent(Agent):
         self.alpha = alpha
         self.gamma = gamma
         self.feature_extractor = feature_extractor
-        self.value_function = QNetwork(2)
+        self.value_function = QNetwork(domain.composition_parameters.num_pitches_per_voice)
 
         self.world = domain
         self.task = task
@@ -27,18 +27,21 @@ class QNetworkAgent(Agent):
         self.current_cumulative_reward = 0.0
         self.previousaction = None
         self.previousstate = None
+        self.name = "Q-network"
 
     def choose_action(self, state: State) -> Action:
         state_features = self.feature_extractor.extract(state)
         max_action, qvalues = self.value_function.getqvalues(state_features)
-        a = max_action
+        index = max_action
+
         if np.random.rand(1) < self.epsilon:
-            a = domain.get_actions(state).sample()
-        return a
+            index = np.random.randint(0, self.value_function.n_actions)
+        return self.world.index_to_action[index]
 
     def act(self):
         state = self.world.get_current_state()
         action = self.choose_action(state)
+        action_index = self.world.action_to_index[action]
 
         self.previousstate = state
         self.previousaction = action
@@ -53,9 +56,10 @@ class QNetworkAgent(Agent):
             terminal = False
 
         r = self.task.reward(state, action, state_prime)
-        q_primes = self.value_function.getqvalues(phi_prime)
+        _, q_primes = self.value_function.getqvalues(phi_prime)
         max_q_prime = np.max(q_primes)
-        q_primes[action] = r + self.gamma * max_q_prime
+
+        q_primes[action_index] = r + self.gamma * max_q_prime
         self.value_function.update(phi_prime, q_primes)
 
         self.current_cumulative_reward += r
@@ -74,17 +78,17 @@ class QNetworkAgent(Agent):
 
 
 class QNetwork():
-    def __init__(self, num_voices: int):
-        n_s_feat = 12 * num_voices
-        n_actions = pow(12, num_voices)
+    def __init__(self, num_pitches_per_voice: List[int]):
+        self.n_s_feat = sum(num_pitches_per_voice)
+        self.n_actions = functools.reduce(lambda x, y: x * y, num_pitches_per_voice)
 
-        self.inputs = tf.placeholder(shape=(1, n_s_feat), dtype=tf.float32)
-        self.weight_matrix = tf.Variable(tf.random_uniform((n_s_feat, n_actions), 0, .01))
+        self.inputs = tf.placeholder(shape=(1, self.n_s_feat), dtype=tf.float32)
+        self.weight_matrix = tf.Variable(tf.random_uniform((self.n_s_feat, self.n_actions), 0, .01)).initialized_value()
         self.q_out = tf.matmul(self.inputs, self.weight_matrix)
         self.argmax = tf.argmax(self.q_out, 1)
 
         # Below we obtain the loss by taking the sum of squares difference between the target and prediction Q values.
-        self.next_qvalues = tf.placeholder(shape=[1, n_actions], dtype=tf.float32)
+        self.next_qvalues = tf.placeholder(shape=[1, self.n_actions], dtype=tf.float32)
         loss = tf.reduce_sum(tf.square(self.next_qvalues - self.q_out))
         trainer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
         self.updateModel = trainer.minimize(loss)
@@ -92,13 +96,15 @@ class QNetwork():
         self.session = tf.Session()
 
     def getqvalues(self, state_features: List[float]):
-        assert len(state_features) == 24
-        feed = {self.inputs: np.array(state_features)}
+        prepped = np.array(state_features).reshape([1, self.n_s_feat])
+        feed = {self.inputs: prepped}
         max_action, q_values = self.session.run([self.argmax, self.q_out], feed_dict=feed)
-        return max_action, q_values
+        return max_action[0], q_values[0]
 
     def update(self, state_features: List[float], target: List[float]):
-        feed = {self.inputs: np.array(state_features), self.next_qvalues: target}
+        prepped_state = np.array(state_features).reshape([1, self.n_s_feat])
+        prepped_target = np.array(target).reshape([1, self.n_actions])
+        feed = {self.inputs: prepped_state, self.next_qvalues: prepped_target}
         self.session.run([self.updateModel, self.weight_matrix], feed_dict=feed)
 
     def closesession(self):

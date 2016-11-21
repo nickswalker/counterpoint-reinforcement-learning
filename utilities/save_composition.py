@@ -21,7 +21,7 @@ def save_composition(name: str, agent_name: str, composition: CompositionEnviron
         staff = Staff([voice])
         if voice.name == "cantus":
             attach(Clef("bass"), staff)
-        attach(composition.scale.key_signature, staff)
+        attach(composition.composition_parameters.scale.key_signature, staff)
 
         staff_group.append(staff)
     tempo = Tempo(Duration(1, 4), 100)

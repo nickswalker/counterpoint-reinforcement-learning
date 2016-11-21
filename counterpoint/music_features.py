@@ -1,12 +1,13 @@
 from enum import Enum
 from typing import List
 
-from abjad.tools.durationtools import Duration
-from abjad.tools.pitchtools import NamedInterval
+from abjad.tools.durationtools.Duration import Duration
+from abjad.tools.pitchtools.NamedInterval import NamedInterval
+from abjad.tools.scoretools import Note
 from abjad.tools.scoretools import Voice
 
 from counterpoint.composition_environment import CompositionState
-from rl.valuefunction.FeatureExtractor import FeatureExtractor
+from rl.valuefunction.FeatureExtractor import StateFeatureExtractor
 
 
 class Motion(Enum):
@@ -16,19 +17,29 @@ class Motion(Enum):
     oblique = 3
 
 
-class MusicFeatureExtractor(FeatureExtractor):
-    def extract(self, state: CompositionState) -> List[float]:
-        current_upper_pitch = state.voices[0][0].written_pitch
-        current_lower_pitch = state.voices[1][0].written_pitch
+class MusicFeatureExtractor(StateFeatureExtractor):
+    def __init__(self, num_pitches_per_voice: List[int]):
+        self.num_voices = len(num_pitches_per_voice)
+        self.pitches_per_voice = num_pitches_per_voice
 
-        harmonic_intervals, melodic_intervals = MusicFeatureExtractor.last_n_intervals(3, self.domain.current_duration,
-                                                                                       self.domain.voices[0],
-                                                                                       self.domain.given_voices[0])
+    def extract(self, state: CompositionState) -> List[float]:
         features = []
-        pass
+        for i in range(0, self.num_voices):
+            item = state.voices[i][0]
+            if isinstance(item, Note):
+                # One hot last pitch per voice
+                pitch = item.written_pitch
+                index = state.composition_parameters.pitch_indices[i][pitch]
+                section = [0] * self.pitches_per_voice[i]
+                section[index] = 1
+                features += section
+            else:
+                features += [0] * self.pitches_per_voice[i]
+
+        return features
 
     def num_features(self) -> int:
-        return 1
+        return sum(self.pitches_per_voice)
 
     @staticmethod
     def last_n_intervals(n: int, current_duration: Duration, uppervoice: Voice, lowervoice: Voice) -> \

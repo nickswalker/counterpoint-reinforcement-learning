@@ -5,7 +5,8 @@ from abjad.tools.scoretools import Voice
 from abjad.tools.tonalanalysistools import Scale
 
 from counterpoint.composition_environment import CompositionEnvironment
-from counterpoint.constants import soprano_range
+from counterpoint.composition_parameters import CompositionParameters
+from counterpoint.constants import soprano_range, bass_range
 from counterpoint.music_features import MusicFeatureExtractor
 from counterpoint.species_counterpoint import CounterpointTask, SpeciesOneCounterpoint
 from rl.agent.qlearning import QLearning
@@ -19,7 +20,9 @@ from rl.task import Task
 def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale,
                              task_class: CounterpointTask = SpeciesOneCounterpoint):
     def generate_environment() -> Tuple[Domain, Task]:
-        domain = CompositionEnvironment(given_voices, [("contrapuntal", soprano_range)], meter, scale)
+        composition_parameters = CompositionParameters([("contrapuntal", soprano_range), ("cantus", bass_range)], meter,
+                                                       scale)
+        domain = CompositionEnvironment(composition_parameters)
         task = task_class(domain)
         return domain, task
 
@@ -37,7 +40,8 @@ def make_agent_factory(initial_value=0.5,
         elif q_learning:
             agent = QLearning(domain, task)
         elif q_network:
-            agent = QNetworkAgent(domain, task, MusicFeatureExtractor())
+            agent = QNetworkAgent(domain, task,
+                                  MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice))
         else:
             if approximation:
                 agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
