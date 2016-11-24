@@ -18,28 +18,30 @@ class Motion(Enum):
 
 
 class MusicFeatureExtractor(StateFeatureExtractor):
-    def __init__(self, num_pitches_per_voice: List[int]):
+    def __init__(self, num_pitches_per_voice: List[int], history_length: int):
         self.num_voices = len(num_pitches_per_voice)
         self.pitches_per_voice = num_pitches_per_voice
+        self.history_length = history_length
 
     def extract(self, state: CompositionState) -> List[float]:
         features = []
         for i in range(0, self.num_voices):
-            item = state.voices[i][0]
-            if isinstance(item, Note):
-                # One hot last pitch per voice
-                pitch = item.written_pitch
-                index = state.composition_parameters.pitch_indices[i][pitch]
-                section = [0] * self.pitches_per_voice[i]
-                section[index] = 1
-                features += section
-            else:
-                features += [0] * self.pitches_per_voice[i]
+            for j in range(0, self.history_length):
+                item = state.voices[i][j]
+                if isinstance(item, Note):
+                    # One hot last pitch per voice
+                    pitch = item.written_pitch
+                    index = state.composition_parameters.pitch_indices[i][pitch]
+                    section = [0] * self.pitches_per_voice[i]
+                    section[index] = 1
+                    features += section
+                else:
+                    features += [0] * self.pitches_per_voice[i]
 
         return features
 
     def num_features(self) -> int:
-        return sum(self.pitches_per_voice)
+        return sum(self.pitches_per_voice) * self.history_length
 
     @staticmethod
     def last_n_intervals(n: int, current_duration: Duration, uppervoice: Voice, lowervoice: Voice) -> \

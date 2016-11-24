@@ -4,6 +4,7 @@ import os
 import numpy as np
 
 from cantus_firmi import cantus_firmi
+from counterpoint.species_counterpoint import SpeciesOneCounterpoint
 from counterpoint.test_tasks import OnePitchIsGood, UnisonsAreGoodTask, ThirdsAreGoodTask
 from utilities.factories import make_environment_factory, make_agent_factory
 from utilities.save_composition import save_composition
@@ -79,7 +80,7 @@ def main():
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([cantus], meter, key, OnePitchIsGood)
+        environment_factory = make_environment_factory([], meter, key, OnePitchIsGood)
         agent_factory = make_agent_factory(q_network=True)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
@@ -88,11 +89,11 @@ def main():
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([cantus], meter, key)
-        agent_factory = make_agent_factory(expected=True, approximation=True)
-        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, output_dir)
-        save("Expected Sarsa", sarsa_results, output_dir, args.unique_id)
+        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint)
+        agent_factory = make_agent_factory(q_network=True)
+        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                          environment_factory, output_dir)
+        save("Q-network", qnetwork_results, output_dir, args.unique_id)
 
 
 def run_experiment(num_trials, num_evaluations, evaluation_period,
@@ -162,7 +163,7 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
             return
         terminated = False
 
-        print(i)
+        # print(i)
         current_step = 0
         while not terminated:
             current_step += 1

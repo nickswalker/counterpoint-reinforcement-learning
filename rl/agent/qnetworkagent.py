@@ -1,4 +1,3 @@
-import functools
 from typing import List
 
 import numpy as np
@@ -18,7 +17,11 @@ class QNetworkAgent(Agent):
         self.alpha = alpha
         self.gamma = gamma
         self.feature_extractor = feature_extractor
-        self.value_function = QNetwork(domain.composition_parameters.num_pitches_per_voice)
+
+        num_actions = len(domain.get_actions())
+        num_state_features = feature_extractor.num_features()
+
+        self.value_function = QNetwork(num_actions, num_state_features)
 
         self.world = domain
         self.task = task
@@ -85,9 +88,9 @@ class QNetworkAgent(Agent):
 
 
 class QNetwork:
-    def __init__(self, num_pitches_per_voice: List[int]):
-        self.n_s_feat = sum(num_pitches_per_voice)
-        self.n_actions = functools.reduce(lambda x, y: x * y, num_pitches_per_voice)
+    def __init__(self, num_actions: int, num_state_features: int):
+        self.n_s_feat = num_state_features
+        self.n_actions = num_actions
 
         with tf.name_scope("qnetwork"):
             # State features

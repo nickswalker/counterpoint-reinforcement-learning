@@ -16,9 +16,11 @@ from rl.state import State
 
 
 class CompositionEnvironment(Domain):
-    def __init__(self, composition_parameters: CompositionParameters, given_voices: List[Voice] = list()):
+    def __init__(self, composition_parameters: CompositionParameters, given_voices: List[Voice] = list(),
+                 history_length=2):
         self.given_voices = given_voices
         self.composition_parameters = composition_parameters
+        self.history_length = history_length
 
         self.voices = [Voice("", name=name) for name, pitch_range in self.composition_parameters.desired_voices]
         self.current_duration = Duration(0)
@@ -28,12 +30,11 @@ class CompositionEnvironment(Domain):
         self.index_to_action = index_to_action
         self.action_to_index = action_to_index
 
-
-    def get_actions(self, state: State) -> Set[Action]:
+    def get_actions(self) -> Set[Action]:
         return self.actions
 
     def get_current_state(self) -> State:
-        k = 1
+        k = self.history_length
         notes_in_voices = []
 
         for voice in self.voices:

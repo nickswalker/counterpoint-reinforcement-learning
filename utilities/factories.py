@@ -41,7 +41,8 @@ def make_agent_factory(initial_value=0.5,
             agent = QLearning(domain, task)
         elif q_network:
             agent = QNetworkAgent(domain, task,
-                                  MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice))
+                                  MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice,
+                                                        domain.history_length))
         else:
             if approximation:
                 agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
