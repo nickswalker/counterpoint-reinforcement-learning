@@ -10,11 +10,20 @@ from counterpoint.composition_environment import CompositionState
 from rl.valuefunction.FeatureExtractor import StateFeatureExtractor
 
 
-class Motion(Enum):
+class RelativeMotion(Enum):
     similar = 0
     parallel = 1
     contrary = 2
     oblique = 3
+    none = 4
+
+
+class Motion(Enum):
+    step_up = 0
+    step_down = 1
+    leap_up = 2
+    leap_down = 3
+    none = 4
 
 
 class MusicFeatureExtractor(StateFeatureExtractor):
@@ -92,15 +101,17 @@ class MusicFeatureExtractor(StateFeatureExtractor):
         return all_harmonic[-num_to_return:], melodic
 
     @staticmethod
-    def characterize_relative_motion(upper_motion: NamedInterval, lower_motion: NamedInterval) -> Motion:
-        # NOTE: handle double unison
+    def characterize_relative_motion(upper_motion: NamedInterval, lower_motion: NamedInterval) -> RelativeMotion:
         if upper_motion.direction_string == lower_motion.direction_string:
-            if upper_motion.interval_string == lower_motion.interval_string:
-                return Motion.parallel
+            if upper_motion.semitones == 0 and lower_motion.semitones == 0:
+                return RelativeMotion.none
+            elif upper_motion.interval_string == lower_motion.interval_string:
+                return RelativeMotion.parallel
             else:
-                return Motion.similar
+                return RelativeMotion.similar
         else:
-            return Motion.contrary
+            return RelativeMotion.contrary
+
 
 
 def interval_or_none(first, second):

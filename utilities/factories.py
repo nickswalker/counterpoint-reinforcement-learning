@@ -7,7 +7,7 @@ from abjad.tools.tonalanalysistools import Scale
 
 from counterpoint.composition_environment import CompositionEnvironment
 from counterpoint.composition_parameters import CompositionParameters
-from counterpoint.constants import soprano_range, bass_range
+from counterpoint.constants import soprano_range, tenor_range
 from counterpoint.music_features import MusicFeatureExtractor
 from counterpoint.species_counterpoint import CounterpointTask, SpeciesOneCounterpoint
 from rl.agent.qlearning import QLearning
@@ -21,7 +21,8 @@ from rl.task import Task
 def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale,
                              task_class: CounterpointTask = SpeciesOneCounterpoint):
     def generate_environment() -> Tuple[Domain, Task]:
-        composition_parameters = CompositionParameters([("contrapuntal", soprano_range), ("cantus", bass_range)], meter,
+        composition_parameters = CompositionParameters([("contrapuntal", soprano_range), ("cantus", tenor_range)],
+                                                       meter,
                                                        scale, Duration(3))
         domain = CompositionEnvironment(composition_parameters)
         task = task_class(domain)

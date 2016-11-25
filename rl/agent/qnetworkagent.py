@@ -63,14 +63,14 @@ class QNetworkAgent(Agent):
         _, q_primes = self.value_function.getqvalues(phi_prime)
         max_q_prime = np.max(q_primes)
 
-        old = q_primes[action_index]
+
         q_primes[action_index] = r + self.gamma * max_q_prime
         loss = self.value_function.update(phi, q_primes)
         _, updated_values = self.value_function.getqvalues(phi)
 
-        step_summary = "Loss %f r %f Old %f New %f Change %f" % (
-            loss, r, old, updated_values[action_index], updated_values[action_index] - old)
-        print(step_summary)
+        if terminal:
+            step_summary = "Loss %.2f r %d" % (loss, r)
+            print(step_summary)
 
         self.current_cumulative_reward += r
         if terminal:
