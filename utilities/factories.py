@@ -1,5 +1,6 @@
 from typing import Tuple, List
 
+from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.metertools import Meter
 from abjad.tools.scoretools import Voice
 from abjad.tools.tonalanalysistools import Scale
@@ -21,7 +22,7 @@ def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Sca
                              task_class: CounterpointTask = SpeciesOneCounterpoint):
     def generate_environment() -> Tuple[Domain, Task]:
         composition_parameters = CompositionParameters([("contrapuntal", soprano_range), ("cantus", bass_range)], meter,
-                                                       scale)
+                                                       scale, Duration(3))
         domain = CompositionEnvironment(composition_parameters)
         task = task_class(domain)
         return domain, task

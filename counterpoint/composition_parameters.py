@@ -1,5 +1,6 @@
 from typing import Tuple, List
 
+from abjad.tools.durationtools import Duration
 from abjad.tools.metertools import Meter
 from abjad.tools.pitchtools import NamedPitch
 from abjad.tools.pitchtools import PitchRange
@@ -7,9 +8,10 @@ from abjad.tools.tonalanalysistools import Scale
 
 
 class CompositionParameters:
-    def __init__(self, desired_voices: List[Tuple[str, PitchRange]], meter: Meter, scale: Scale):
+    def __init__(self, desired_voices: List[Tuple[str, PitchRange]], meter: Meter, scale: Scale, duration: Duration):
         assert meter.is_simple
         self.scale = scale
+        self.duration = duration
         self.meter = meter
         self.number_of_voices_to_generate = len(desired_voices)
         self.desired_voices = desired_voices
