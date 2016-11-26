@@ -3,7 +3,6 @@ from typing import Set, List
 
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.scoretools.Note import Note
-from abjad.tools.scoretools.Rest import Rest
 from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.topleveltools.inspect_ import inspect_
 
@@ -17,7 +16,7 @@ from rl.state import State
 
 class CompositionEnvironment(Domain):
     def __init__(self, composition_parameters: CompositionParameters, given_voices: List[Voice] = list(),
-                 history_length=2):
+                 history_length=5):
         self.given_voices = given_voices
         self.composition_parameters = composition_parameters
         self.history_length = history_length
@@ -42,7 +41,7 @@ class CompositionEnvironment(Domain):
             history = list(voice[-lookback:])
             if len(history) < k:
                 shortfall = k - len(history)
-                fill = [Rest(Duration(1, 4))] * shortfall
+                fill = [None] * shortfall
                 history = fill + history
 
             notes_in_voices.append(tuple(history))
@@ -60,7 +59,7 @@ class CompositionEnvironment(Domain):
             history = list(given_voice[i - k:i])
             if len(history) < k:
                 shortfall = k - len(history)
-                fill = [Rest(Duration(1, 4))] * shortfall
+                fill = [None] * shortfall
                 history = fill + history
 
             notes_in_voices.append(tuple(history))
