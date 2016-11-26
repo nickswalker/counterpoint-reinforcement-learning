@@ -100,7 +100,7 @@ def main():
         agent_factory = make_agent_factory(lstm_network=True)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
-        save("Q-network", qnetwork_results, output_dir, args.unique_id)
+        save("Dueling Dueling DQN", qnetwork_results, output_dir, args.unique_id)
 
 
 def run_experiment(num_trials, num_evaluations, evaluation_period,
@@ -128,7 +128,7 @@ def run_experiment(num_trials, num_evaluations, evaluation_period,
 
 def evaluate(table, agent_factory, environment_factory, unique_name: str, out_dir: str) -> float:
     domain, task = environment_factory()
-    agent = agent_factory(domain, task)
+    agent = agent_factory(domain, task, table)
     agent.value_function = table
     agent.epsilon = 0.0
     agent.alpha = 0.0
@@ -158,7 +158,7 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
     :return:
     """
     domain, task = environment_factory()
-    agent = agent_factory(domain, task)
+    agent = agent_factory(domain, task, None)
 
     stops = 0
     for i in range(0, evaluation_period * num_stops):

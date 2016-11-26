@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Tuple
 
+from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.pitchtools.NamedInterval import NamedInterval
 from abjad.tools.scoretools.StaffGroup import StaffGroup
 from abjad.tools.tonalanalysistools.ScaleDegree import ScaleDegree
@@ -30,7 +31,8 @@ class CounterpointTask(Task):
 class SpeciesOneCounterpoint(CounterpointTask):
     def __init__(self, domain: CompositionEnvironment):
         super().__init__(domain)
-
+        self.prev_duration = Duration(0)
+        self.prev_grade = 0.0
     def grade_composition(self, composition: CompositionEnvironment) -> int:
         penalties = 0
         working_staff = StaffGroup()
@@ -58,7 +60,7 @@ class SpeciesOneCounterpoint(CounterpointTask):
                 penalties -= 1
             if abs(interval.semitones) in constants.dissonant_intervals:
                 penalties -= 1
-            # No intervals greater than a 12th
+            # No harmonic intervals greater than a 12th
             if abs(interval.semitones) > NamedInterval("P12").semitones:
                 penalties -= 2
             # Tenth is pushing it
@@ -67,8 +69,7 @@ class SpeciesOneCounterpoint(CounterpointTask):
 
             maximum_extent = vertical_moment.offset + vertical_moment.leaves[0].written_duration
             if maximum_extent == composition.composition_parameters.duration:
-                if abs(interval.semitones) not in constants.perfect_intervals:
-                    penalties -= 1
+
 
                 prev_top = degrees[0][-2]
                 prev_bottom = degrees[1][-2]
@@ -92,11 +93,19 @@ class SpeciesOneCounterpoint(CounterpointTask):
             if i > 0:
                 prev_interval = intervals[i - 1]
                 prev_slice = vertical_moments[i - 1]
-                motion = self.sices_to_motion(prev_slice, vertical_moment)
+
+                lower, upper = self.slices_to_melodic_intervals(prev_slice, vertical_moment)
+
+                if abs(lower.semitones) > 4:
+                    penalties -= 1
+                if abs(upper.semitones) > 4:
+                    penalties -= 1
+
+                motion = MusicFeatureExtractor.characterize_relative_motion(upper, lower)
                 if motion is RelativeMotion.none:
                     penalties -= 1
 
-                # Never have two perfect consosnances in a row
+                # Never have two perfect consonances in a row
                 if prev_interval.semitones == interval.semitones and interval.quality_string == "perfect":
                     penalties -= 1
 
@@ -129,7 +138,19 @@ class SpeciesOneCounterpoint(CounterpointTask):
         return MusicFeatureExtractor.characterize_relative_motion(upper, lower)
 
     def reward(self, state: CompositionState, action: CompositionAction, state_prime: CompositionState):
-        return self.grade_composition(self.domain)
+        if self.prev_duration == state_prime.preceding_duration:
+            assert False
+            return
+        elif self.prev_duration < state_prime.preceding_duration:
+            new_grade = self.grade_composition(self.domain)
+            reward = new_grade - self.prev_grade
+            self.prev_grade = new_grade
+        elif self.prev_duration > state_prime.preceding_duration:
+            # This should only be the first step
+            reward = self.grade_composition(self.domain)
+            self.prev_grade = reward
+        self.prev_duration = state_prime.preceding_duration
+        return reward
 
     def is_step(self, interval: NamedInterval):
         pass
