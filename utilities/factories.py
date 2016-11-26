@@ -10,6 +10,7 @@ from counterpoint.composition_parameters import CompositionParameters
 from counterpoint.constants import soprano_range, tenor_range
 from counterpoint.music_features import MusicFeatureExtractor
 from counterpoint.species_counterpoint import CounterpointTask, SpeciesOneCounterpoint
+from rl.agent.duelingqnetworkagent import DuelingQNetworkAgent
 from rl.agent.qlearning import QLearning
 from rl.agent.qnetworkagent import QNetworkAgent
 from rl.agent.sarsa import Sarsa
@@ -35,10 +36,15 @@ def make_agent_factory(initial_value=0.5,
                        epsilon=0.1,
                        alpha=0.5,
                        lmbda=0.95,
-                       expected=False, true_online=False, q_learning=False, approximation=False, q_network=False):
+                       expected=False, true_online=False, q_learning=False, approximation=False, q_network=False,
+                       lstm_network=False):
     def generate_agent(domain, task):
         if true_online:
             agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
+        elif lstm_network:
+            agent = DuelingQNetworkAgent(domain, task,
+                                         MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice,
+                                                               domain.history_length), epsilon=epsilon, alpha=alpha)
         elif q_learning:
             agent = QLearning(domain, task)
         elif q_network:
