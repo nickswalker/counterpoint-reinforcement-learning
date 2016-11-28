@@ -28,11 +28,20 @@ class CounterpointTask(Task):
         return 0
 
 
+def is_step(interval):
+    return 0 < abs(interval.semitones) < 3
+
+
+def is_leap(interval):
+    return abs(interval.semitones) > 5
+
+
 class SpeciesOneCounterpoint(CounterpointTask):
     def __init__(self, domain: CompositionEnvironment):
         super().__init__(domain)
         self.prev_duration = Duration(0)
         self.prev_grade = 0.0
+        self.differential = False
 
     def grade_composition(self, composition: CompositionEnvironment) -> int:
         penalties = 0
@@ -131,18 +140,20 @@ class SpeciesOneCounterpoint(CounterpointTask):
 
                     # Encourage counterstepwise motion.
                     # If the prev motion was a leap..
-                    if self.is_leap(lower_prev):
+                    if is_leap(lower_prev):
                         # It needs to be resolved by a step, and the step needs to be in the opposite direction
-                        if not self.is_step(lower) or (lower_prev.semitones > 0 ^ lower.semitones > 0):
+                        if not is_step(lower) or (lower_prev.semitones > 0 ^ lower.semitones > 0):
                             penalties -= 5
                         else:
-                            print("we did it")
+                            ()
+                            # print("we did it")
 
-                    if self.is_leap(upper_prev):
-                        if not self.is_step(upper) or (upper_prev.semitones > 0 ^ upper.semitones > 0):
+                    if is_leap(upper_prev):
+                        if not is_step(upper) or (upper_prev.semitones > 0 ^ upper.semitones > 0):
                             penalties -= 5
                         else:
-                            print("we did it")
+                            ()
+                            # print("we did it")
 
         """
         for pitch, num in pitch_tally.items():
@@ -160,12 +171,6 @@ class SpeciesOneCounterpoint(CounterpointTask):
 
         return penalties
 
-    def is_leap(self, interval):
-        return abs(interval.semitones) > 5
-
-    def is_step(self, interval):
-        return 0 < abs(interval.semitones) < 3
-
     def slices_to_melodic_intervals(self, first, second) -> Tuple[NamedInterval, NamedInterval]:
         first_lower = first.leaves[0]
         second_lower = second.leaves[0]
@@ -181,6 +186,11 @@ class SpeciesOneCounterpoint(CounterpointTask):
         return MusicFeatureExtractor.characterize_relative_motion(upper, lower)
 
     def reward(self, state: CompositionState, action: CompositionAction, state_prime: CompositionState):
+        if not self.differential:
+            if state_prime.preceding_duration == Duration(4):
+                return self.grade_composition(self.domain)
+            else:
+                return 0
         if self.prev_duration == state_prime.preceding_duration:
             assert False
             return
