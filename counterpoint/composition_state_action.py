@@ -27,6 +27,19 @@ class CompositionState(State):
         return str(self.voices) + " " + str(self.preceding_duration)
 
 
+class PositionIndependentCompositionState(State):
+    def __eq__(self, other):
+        if isinstance(other, PositionIndependentCompositionState):
+            return self.voices == other.voices
+        return False
+
+    def __hash__(self):
+        return hash(self.voices)
+
+    def __str__(self):
+        return str(self.voices) + " " + str(self.preceding_duration)
+
+
 class CompositionAction(Action):
     def __init__(self, notes_per_voice: Tuple[HashableNote]):
         self.notes_per_voice = notes_per_voice
