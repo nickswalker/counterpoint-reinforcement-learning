@@ -7,7 +7,8 @@ from abjad.tools.scoretools.Voice import Voice
 from abjad.tools.topleveltools.inspect_ import inspect_
 
 from counterpoint.composition_parameters import CompositionParameters
-from counterpoint.composition_state_action import CompositionAction, CompositionState
+from counterpoint.composition_state_action import CompositionAction, CompositionState, \
+    PositionIndependentCompositionState
 from counterpoint.hashable_note import HashableNote
 from rl.action import Action
 from rl.domain import Domain
@@ -16,7 +17,7 @@ from rl.state import State
 
 class CompositionEnvironment(Domain):
     def __init__(self, composition_parameters: CompositionParameters, given_voices: List[Voice] = list(),
-                 history_length=1):
+                 history_length=1, position_invariant=False):
         self.given_voices = given_voices
         self.composition_parameters = composition_parameters
         self.history_length = history_length
@@ -28,6 +29,7 @@ class CompositionEnvironment(Domain):
         self.actions = actionslist
         self.index_to_action = index_to_action
         self.action_to_index = action_to_index
+        self.position_invariant = position_invariant
 
     def get_actions(self) -> List[Action]:
         return self.actions
@@ -46,8 +48,9 @@ class CompositionEnvironment(Domain):
                 history = fill + history
 
             notes_in_voices.append(tuple(history))
-
-
+        if self.position_invariant:
+            return PositionIndependentCompositionState(self.current_duration, tuple(notes_in_voices),
+                                                       self.composition_parameters)
         return CompositionState(self.current_duration, tuple(notes_in_voices), self.composition_parameters)
 
     def apply_action(self, action: CompositionAction):

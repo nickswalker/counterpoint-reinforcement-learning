@@ -27,7 +27,7 @@ class CompositionState(State):
         return str(self.voices) + " " + str(self.preceding_duration)
 
 
-class PositionIndependentCompositionState(State):
+class PositionIndependentCompositionState(CompositionState):
     def __eq__(self, other):
         if isinstance(other, PositionIndependentCompositionState):
             return self.voices == other.voices
