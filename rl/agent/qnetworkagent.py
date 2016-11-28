@@ -11,8 +11,8 @@ from rl.valuefunction import FeatureExtractor
 
 
 class QNetworkAgent(Agent):
-    def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.1, alpha=0.1,
-                 gamma=0.95):
+    def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.5, alpha=0.1,
+                 gamma=0.95, value_function=None):
         self.initial_epsilon = epsilon
         self.epsilon = epsilon
         self.alpha = alpha / domain.history_length
@@ -22,8 +22,10 @@ class QNetworkAgent(Agent):
         num_actions = len(domain.get_actions())
         num_state_features = feature_extractor.num_features()
 
-        self.value_function = QNetwork(num_actions, num_state_features, self.alpha)
-
+        if value_function is None:
+            self.value_function = QNetwork(num_actions, num_state_features, self.alpha)
+        else:
+            self.value_function = value_function
         self.world = domain
         self.task = task
 
@@ -68,7 +70,7 @@ class QNetworkAgent(Agent):
         q_primes[action_index] = r + self.gamma * max_q_prime
         loss = self.value_function.update(phi, q_primes)
         _, updated_values = self.value_function.getqvalues(phi)
-        self.epsilon *= 0.9999
+
         if terminal:
             step_summary = "Loss %.2f r %d" % (loss, self.current_cumulative_reward)
             print(step_summary)
@@ -86,6 +88,7 @@ class QNetworkAgent(Agent):
         self.current_cumulative_reward = 0.0
         self.previousaction = None
         self.previousstate = None
+        self.epsilon *= 0.999
 
 
 class QNetwork:
@@ -102,7 +105,7 @@ class QNetwork:
             self.weight_matrix = tf.Variable(tf.random_uniform((self.n_s_feat, self.n_actions), 0, .01))
             # One q-value is a dot product of the state features with the action values. This mat multiply
             # produces all the q_values at once.
-            self.hidden_layer = tf.contrib.layers.fully_connected(self.inputs, self.n_actions)
+            # self.hidden_layer = tf.contrib.layers.fully_connected(self.inputs, self.n_s_feat, activation_fn=tf.nn.relu)
             self.q_out = tf.matmul(self.inputs, self.weight_matrix)
             self.argmax = tf.argmax(self.q_out, 1)
 
@@ -112,7 +115,7 @@ class QNetwork:
             # q values (standard q update) and the state features for the state we just observed a reward from.
             self.target_qvalues = tf.placeholder(shape=[1, self.n_actions], dtype=tf.float32)
             self.loss = tf.reduce_sum(tf.square(self.target_qvalues - self.q_out))
-            trainer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+            trainer = tf.train.AdamOptimizer(learning_rate=learning_rate)
             self.updateModel = trainer.minimize(self.loss)
 
         self.session = tf.Session()

@@ -20,7 +20,7 @@ def save_composition(name: str, agent_name: str, composition: CompositionEnviron
     for voice in composition.voices + composition.given_voices:
         staff = Staff([voice])
         if voice.name == "cantus":
-            attach(Clef("bass"), staff)
+            attach(Clef("alto"), staff)
         attach(composition.composition_parameters.scale.key_signature, staff)
 
         staff_group.append(staff)

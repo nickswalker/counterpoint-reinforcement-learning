@@ -49,10 +49,11 @@ class MusicFeatureExtractor(StateFeatureExtractor):
                     section[-1] = 1
                     features += section
 
+        features.append(float(state.preceding_duration))
         return features
 
     def num_features(self) -> int:
-        return sum(self.options_per_voice) * self.history_length
+        return sum(self.options_per_voice) * self.history_length + 1
 
 
     @staticmethod

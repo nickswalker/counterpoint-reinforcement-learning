@@ -33,13 +33,16 @@ class SpeciesOneCounterpoint(CounterpointTask):
         super().__init__(domain)
         self.prev_duration = Duration(0)
         self.prev_grade = 0.0
+
     def grade_composition(self, composition: CompositionEnvironment) -> int:
         penalties = 0
         working_staff = StaffGroup()
         working_staff.append(composition.voices[0])
         working_staff.append(composition.voices[1])
 
-        motion_tally = {}
+        interval_tally = {}
+        pitch_tally = {}
+        melodic_interval_tally = {}
         vertical_moments = list(iterate(working_staff).by_vertical_moment())
         intervals = []
         degrees = [[], []]
@@ -50,6 +53,15 @@ class SpeciesOneCounterpoint(CounterpointTask):
             intervals.append(interval)
             degrees[0].append(composition.composition_parameters.scale.named_pitch_class_to_scale_degree(pitches[0]))
             degrees[1].append(composition.composition_parameters.scale.named_pitch_class_to_scale_degree(pitches[1]))
+
+            count = pitch_tally.setdefault(pitches[0], 0) + 1
+            pitch_tally[pitches[0]] = count
+
+            count = pitch_tally.setdefault(pitches[1], 0) + 1
+            pitch_tally[pitches[1]] = count
+
+            count = interval_tally.setdefault(interval, 0) + 1
+            interval_tally[interval] = count
 
         for i in range(len(vertical_moments)):
             vertical_moment = vertical_moments[i]
@@ -69,7 +81,6 @@ class SpeciesOneCounterpoint(CounterpointTask):
 
             maximum_extent = vertical_moment.offset + vertical_moment.leaves[0].written_duration
             if maximum_extent == composition.composition_parameters.duration:
-
 
                 prev_top = degrees[0][-2]
                 prev_bottom = degrees[1][-2]
@@ -96,10 +107,16 @@ class SpeciesOneCounterpoint(CounterpointTask):
 
                 lower, upper = self.slices_to_melodic_intervals(prev_slice, vertical_moment)
 
+                count = melodic_interval_tally.get(lower, 0) + 1
+                melodic_interval_tally[lower] = count
+
+                count = melodic_interval_tally.get(upper, 0) + 1
+                melodic_interval_tally[upper] = count
+
                 if abs(lower.semitones) > 4:
-                    penalties -= 1
+                    penalties -= 10
                 if abs(upper.semitones) > 4:
-                    penalties -= 1
+                    penalties -= 10
 
                 motion = MusicFeatureExtractor.characterize_relative_motion(upper, lower)
                 if motion is RelativeMotion.none:
@@ -119,7 +136,17 @@ class SpeciesOneCounterpoint(CounterpointTask):
                     if interval.semitones in constants.consonant_intervals:
                         penalties -= 1
 
+        for pitch, num in pitch_tally.items():
+            if num > 2:
+                penalties -= 5 * num
 
+        for interval, num in interval_tally.items():
+            if num > 5:
+                penalties -= 5 * num
+
+        for interval, num in melodic_interval_tally.items():
+            if num > 5:
+                penalties -= 5 * num
 
         return penalties
 

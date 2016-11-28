@@ -23,6 +23,9 @@ class CompositionState(State):
     def __hash__(self):
         return hash((self.preceding_duration, self.voices))
 
+    def __str__(self):
+        return str(self.voices) + " " + str(self.preceding_duration)
+
 
 class CompositionAction(Action):
     def __init__(self, notes_per_voice: Tuple[HashableNote]):
@@ -40,3 +43,6 @@ class CompositionAction(Action):
 
     def __hash__(self):
         return hash(self.notes_per_voice)
+
+    def __str__(self):
+        return str(self.notes_per_voice)

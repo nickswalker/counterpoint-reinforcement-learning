@@ -24,7 +24,7 @@ class QLearning(Agent):
         self.previousaction = None
         self.previousstate = None
 
-        self.value_function = StateActionValueTable(domain.get_actions(domain.get_current_state()))
+        self.value_function = StateActionValueTable(domain.get_actions())
         self.current_cumulative_reward = 0.0
 
     def act(self):
@@ -47,6 +47,7 @@ class QLearning(Agent):
 
         self.update(state, action, state_prime, terminal=terminal)
 
+
         if terminal:
             ()
             # print(self._log_policy() + " " + str(self.current_cumulative_reward))
@@ -66,6 +67,8 @@ class QLearning(Agent):
         new_value = old_value + self.alpha * error
         self.value_function.setactionvalue(state, action, new_value)
         self.current_cumulative_reward += reward
+        if terminal:
+            print(self.current_cumulative_reward)
 
     def choose_action(self, state) -> Action:
         """Given a state, pick an action according to an epsilon-greedy policy.
@@ -74,7 +77,7 @@ class QLearning(Agent):
         :return:
         """
         if random.random() < self.epsilon:
-            actions = self.domain.get_actions(state)
+            actions = self.domain.get_actions()
             return random.sample(actions, 1)[0]
         else:
             best_actions = self.value_function.bestactions(state)

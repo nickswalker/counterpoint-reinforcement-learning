@@ -12,7 +12,7 @@ from rl.valuefunction import FeatureExtractor
 
 
 class DuelingQNetworkAgent(Agent):
-    def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.1, alpha=0.1,
+    def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.1, alpha=0.5,
                  gamma=0.95, value_function=None):
         self.initial_epsilon = epsilon
         self.epsilon = epsilon
@@ -39,8 +39,8 @@ class DuelingQNetworkAgent(Agent):
         self.experience_buffer = ExperienceBuffer()
         self.total_steps = 0
         self.update_frequency = 4
-        self.batch_size = 64
-        self.pretraining_steps = 2000
+        self.batch_size = 32
+        self.pretraining_steps = 100
 
     def choose_action(self, state_features) -> Action:
 
@@ -57,6 +57,7 @@ class DuelingQNetworkAgent(Agent):
         phi = self.feature_extractor.extract(state)
         action = self.choose_action(phi)
         action_index = self.world.action_to_index[action]
+        print(action_index)
 
         self.world.apply_action(action)
         state_prime = self.world.get_current_state()
@@ -69,9 +70,9 @@ class DuelingQNetworkAgent(Agent):
         if self.total_steps > self.pretraining_steps and self.total_steps % self.update_frequency == 0:
             trainBatch = self.experience_buffer.sample(self.batch_size)  # Get a random batch of experiences.
             loss = self.value_function.update(trainBatch)
-            # print(loss)
+            print(loss)
 
-        self.epsilon *= 0.9999
+
         self.current_cumulative_reward += r
 
         experience = (phi, action_index, r, phi_prime, terminal)
@@ -89,6 +90,7 @@ class DuelingQNetworkAgent(Agent):
         self.current_cumulative_reward = 0.0
         self.previousaction = None
         self.previousstate = None
+        self.epsilon *= 0.99
 
 
 class DoubleQNetworkValueFunction:
@@ -100,7 +102,7 @@ class DoubleQNetworkValueFunction:
         self.target_network = DuelingQNetworkValueFunction(num_actions, num_state_features, learning_rate,
                                                            n_hidden=n_hidden)
         self.gamma = gamma
-        self.tau = 0.001
+        self.tau = 0.1
         self.session = tf.Session()
         init = tf.initialize_all_variables()
         self.session.run(init)
@@ -159,13 +161,12 @@ class DuelingQNetworkValueFunction:
     def __init__(self, num_actions: int, num_state_features: int, learning_rate: float, n_hidden: int = 512):
         self.n_s_feat = num_state_features
         self.n_actions = num_actions
-        self.tau = 0.1
         half_hidden = int(n_hidden / 2)
         with tf.name_scope("qnetwork"):
             # State features go in...
             self.inputs = tf.placeholder(shape=(None, self.n_s_feat), dtype=tf.float32)
             # and through a broad fully-connected layer.
-            self.front = tf.contrib.layers.fully_connected(self.inputs, n_hidden, activation_fn=tf.nn.relu)
+            self.front = tf.contrib.layers.fully_connected(self.inputs, n_hidden)
             # Then we break the fully-connected output into two halves.
             self.streamAC, self.streamVC = tf.split(1, 2, self.front)
             # Advantage maps from the net to actions

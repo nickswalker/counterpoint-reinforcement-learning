@@ -1,5 +1,5 @@
 import itertools
-from typing import Set, List
+from typing import List
 
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.scoretools.Note import Note
@@ -16,7 +16,7 @@ from rl.state import State
 
 class CompositionEnvironment(Domain):
     def __init__(self, composition_parameters: CompositionParameters, given_voices: List[Voice] = list(),
-                 history_length=5):
+                 history_length=1):
         self.given_voices = given_voices
         self.composition_parameters = composition_parameters
         self.history_length = history_length
@@ -29,7 +29,7 @@ class CompositionEnvironment(Domain):
         self.index_to_action = index_to_action
         self.action_to_index = action_to_index
 
-    def get_actions(self) -> Set[Action]:
+    def get_actions(self) -> List[Action]:
         return self.actions
 
     def get_current_state(self) -> State:
@@ -39,6 +39,7 @@ class CompositionEnvironment(Domain):
         for voice in self.voices:
             lookback = min(len(voice), k)
             history = list(voice[-lookback:])
+            history = [HashableNote(note) for note in history]
             if len(history) < k:
                 shortfall = k - len(history)
                 fill = [None] * shortfall
@@ -46,23 +47,6 @@ class CompositionEnvironment(Domain):
 
             notes_in_voices.append(tuple(history))
 
-        # Find the closest index
-        for given_voice in self.given_voices:
-            total_duration = Duration(0)
-            i = 0
-            for i in range(0, len(given_voice)):
-                next_note = given_voice[i]
-                if total_duration + next_note.written_duration >= self.current_duration:
-                    break
-                total_duration += next_note.written_duration
-
-            history = list(given_voice[i - k:i])
-            if len(history) < k:
-                shortfall = k - len(history)
-                fill = [None] * shortfall
-                history = fill + history
-
-            notes_in_voices.append(tuple(history))
 
         return CompositionState(self.current_duration, tuple(notes_in_voices), self.composition_parameters)
 

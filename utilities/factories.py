@@ -24,7 +24,7 @@ def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Sca
     def generate_environment() -> Tuple[Domain, Task]:
         composition_parameters = CompositionParameters([("contrapuntal", soprano_range), ("cantus", tenor_range)],
                                                        meter,
-                                                       scale, Duration(3))
+                                                       scale, Duration(4))
         domain = CompositionEnvironment(composition_parameters)
         task = task_class(domain)
         return domain, task
@@ -48,9 +48,9 @@ def make_agent_factory(initial_value=0.5,
         elif q_learning:
             agent = QLearning(domain, task)
         elif q_network:
-            agent = QNetworkAgent(domain, task,
-                                  MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice,
-                                                        domain.history_length), epsilon=epsilon, alpha=alpha,
+            extractor = MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice,
+                                              domain.history_length)
+            agent = QNetworkAgent(domain, task, feature_extractor=extractor, epsilon=epsilon, alpha=alpha,
                                   value_function=table)
         else:
             if approximation:

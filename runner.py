@@ -5,7 +5,7 @@ import numpy as np
 
 from cantus_firmi import cantus_firmi
 from counterpoint.species_counterpoint import SpeciesOneCounterpoint
-from counterpoint.test_tasks import OnePitchIsGood, UnisonsAreGoodTask, ThirdsAreGoodTask
+from counterpoint.test_tasks import ScalesAreGood
 from utilities.factories import make_environment_factory, make_agent_factory
 from utilities.save_composition import save_composition
 from utilities.trial_log import ExperimentLog
@@ -49,38 +49,28 @@ def main():
                    fmt=["%d", "%f", "%f", "%f"],
                    delimiter=",")
 
-    if experiment_num == 0:
+    if experiment_num == 1:
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([cantus], meter, key, ThirdsAreGoodTask)
-        agent_factory = make_agent_factory(expected=True)
-        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, output_dir)
-        save("Expected Sarsa", sarsa_results, output_dir, args.unique_id)
-    elif experiment_num == 1:
-        cantus = cantus_firmi[0][0]
-        meter = cantus_firmi[0][1]
-        key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([cantus], meter, key, UnisonsAreGoodTask)
-        agent_factory = make_agent_factory(expected=True)
-        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, output_dir)
-        save("Expected Sarsa", sarsa_results, output_dir, args.unique_id)
+        environment_factory = make_environment_factory([], meter, key, ScalesAreGood)
+        agent_factory = make_agent_factory(q_learning=True)
+        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                          environment_factory, output_dir)
+        save("Q-learning", qnetwork_results, output_dir, args.unique_id)
     elif experiment_num == 2:
-        cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([cantus], meter, key, OnePitchIsGood)
-        agent_factory = make_agent_factory(expected=True)
-        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, output_dir)
-        save("Expected Sarsa", sarsa_results, output_dir, args.unique_id)
+        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint)
+        agent_factory = make_agent_factory(q_learning=True)
+        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                          environment_factory, output_dir)
+        save("Q-learning", qnetwork_results, output_dir, args.unique_id)
     elif experiment_num == 3:
         cantus = cantus_firmi[0][0]
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([], meter, key, OnePitchIsGood)
+        environment_factory = make_environment_factory([], meter, key, ScalesAreGood)
         agent_factory = make_agent_factory(q_network=True)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
@@ -96,11 +86,19 @@ def main():
     elif experiment_num == 5:
         meter = cantus_firmi[0][1]
         key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([], meter, key, OnePitchIsGood)
-        agent_factory = make_agent_factory(lstm_network=True)
+        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint)
+        agent_factory = make_agent_factory(lstm_network=True, alpha=0.001)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
-        save("Dueling Dueling DQN", qnetwork_results, output_dir, args.unique_id)
+        save("Double Dueling DQN", qnetwork_results, output_dir, args.unique_id)
+    elif experiment_num == 6:
+        meter = cantus_firmi[0][1]
+        key = cantus_firmi[0][2]
+        environment_factory = make_environment_factory([], meter, key, ScalesAreGood)
+        agent_factory = make_agent_factory(lstm_network=True, alpha=0.5, epsilon=1.0)
+        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                          environment_factory, output_dir)
+        save("Double Dueling DQN", qnetwork_results, output_dir, args.unique_id)
 
 
 def run_experiment(num_trials, num_evaluations, evaluation_period,
