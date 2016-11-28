@@ -24,7 +24,7 @@ def save_composition(name: str, agent_name: str, composition: CompositionEnviron
         attach(composition.composition_parameters.scale.key_signature, staff)
 
         staff_group.append(staff)
-    tempo = Tempo(Duration(1, 4), 100)
+    tempo = Tempo(Duration(4, 4), 60)
     attach(tempo, staff_group[0])
     score.append(staff_group)
     score.add_final_bar_line()

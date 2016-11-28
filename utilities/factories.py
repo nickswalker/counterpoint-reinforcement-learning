@@ -34,7 +34,7 @@ def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Sca
     def generate_environment() -> Tuple[Domain, Task]:
         composition_parameters = CompositionParameters([("contrapuntal", soprano_range), ("cantus", tenor_range)],
                                                        meter,
-                                                       scale, Duration(4))
+                                                       scale, Duration(11))
         domain = CompositionEnvironment(composition_parameters, history_length=history_length)
         task = task_class(domain)
         return domain, task

@@ -28,7 +28,7 @@ class MusicFeatureExtractor(StateFeatureExtractor):
     def __init__(self, num_pitches_per_voice: List[int], history_length: int):
         self.num_voices = len(num_pitches_per_voice)
         # Include a null class for unpopulated features
-        self.max_beats = 20
+        self.max_beats = 12
         self.options_per_voice = [num_pitches + 1 for num_pitches in num_pitches_per_voice]
         self.history_length = history_length
 

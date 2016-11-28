@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Process Lilypond Files" type="PythonConfigurationType" factoryName="Python" editBeforeRun="true" singleton="true">
+  <configuration default="false" name="Q-learning - Species 1 (k=11)" type="PythonConfigurationType" factoryName="Python" singleton="true">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -12,8 +12,8 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="counterpoint-reinforcement-learning" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/process_lilypond_files.py" />
-    <option name="PARAMETERS" value="results/2-11" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/runner.py" />
+    <option name="PARAMETERS" value="2 results/2-11 -evaluations 100 -history 11" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>

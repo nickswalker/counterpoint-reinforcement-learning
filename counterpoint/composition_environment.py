@@ -66,7 +66,7 @@ class CompositionEnvironment(Domain):
             pitch_set = self.composition_parameters.scale.create_named_pitch_set_in_pitch_range(voice_range)
             possible_pitches_per_voice.append(pitch_set)
 
-        possible_durations_per_voice = [[Duration(1, 4)] for _ in
+        possible_durations_per_voice = [[Duration(4, 4)] for _ in
                                         range(self.composition_parameters.number_of_voices_to_generate)]
         actions = []
 
