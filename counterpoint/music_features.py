@@ -28,6 +28,7 @@ class MusicFeatureExtractor(StateFeatureExtractor):
     def __init__(self, num_pitches_per_voice: List[int], history_length: int):
         self.num_voices = len(num_pitches_per_voice)
         # Include a null class for unpopulated features
+        self.max_beats = 20
         self.options_per_voice = [num_pitches + 1 for num_pitches in num_pitches_per_voice]
         self.history_length = history_length
 
@@ -49,11 +50,14 @@ class MusicFeatureExtractor(StateFeatureExtractor):
                     section[-1] = 1
                     features += section
 
-        features.append(float(state.preceding_duration))
+        beat = int(float(state.preceding_duration) / 0.25)
+        beat_section = [0] * self.max_beats
+        beat_section[beat] = 1
+        features += beat_section
         return features
 
     def num_features(self) -> int:
-        return sum(self.options_per_voice) * self.history_length + 1
+        return sum(self.options_per_voice) * self.history_length + self.max_beats
 
 
     @staticmethod

@@ -67,8 +67,6 @@ class QLearning(Agent):
         new_value = old_value + self.alpha * error
         self.value_function.setactionvalue(state, action, new_value)
         self.current_cumulative_reward += reward
-        if terminal:
-            print(self.current_cumulative_reward)
 
     def choose_action(self, state) -> Action:
         """Given a state, pick an action according to an epsilon-greedy policy.

@@ -15,8 +15,8 @@ class TestValueFunction(unittest.TestCase):
         self.value_function = StateActionValueTable(actions=[self.allowed_action])
 
     def test_state_value_function(self):
-        state = CompositionState(Duration(0), (self.allowed_note, None))
-        state_two = CompositionState(Duration(0), (self.allowed_note, self.allowed_note))
+        state = CompositionState(Duration(0), (self.allowed_note, None), None)
+        state_two = CompositionState(Duration(0), (self.allowed_note, self.allowed_note), None)
         self.assertEqual(0.0, self.value_function.actionvalue(state, self.allowed_action))
         self.value_function.setactionvalue(state, self.allowed_action, 1.0)
         self.assertEqual(1.0, self.value_function.actionvalue(state, self.allowed_action))

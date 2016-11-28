@@ -31,10 +31,10 @@ class TrueOnlineSarsaLambda(Agent):
         self.value_old = 0.0
 
         example_state = domain.get_current_state()
-        actions = domain.get_actions(example_state)
+        actions = domain.get_actions()
         self.feature_extractor = feature_extractor
-        self.eligibility = np.zeros(self.feature_extractor.number_of_features)
-        self.value_function = LinearVFA(self.feature_extractor.number_of_features, actions)
+        self.eligibility = np.zeros(self.feature_extractor.num_features())
+        self.value_function = LinearVFA(self.feature_extractor.num_features(), actions)
         self.current_cumulative_reward = 0.0
 
     def act(self):
@@ -65,7 +65,7 @@ class TrueOnlineSarsaLambda(Agent):
         reward = self.task.reward(state, action, state_prime)
 
         state_weights = np.array(self.value_function.weightsfor(action))
-        state_features = np.array(self.feature_extractor.extract(state, action))
+        state_features = np.array(self.feature_extractor.extract(state))
 
         value_prime = np.dot(state_weights, state_features)
         value = np.dot(state_weights, state_features)
@@ -79,7 +79,7 @@ class TrueOnlineSarsaLambda(Agent):
                 value_prime = self.expected_value(state_prime)
 
             else:
-                state_prime_features = np.array(self.feature_extractor.extract(state_prime, action_prime))
+                state_prime_features = np.array(self.feature_extractor.extract(state_prime))
                 value_prime = np.dot(state_weights, state_prime_features)
 
         delta = reward + self.gamma * value_prime - value
@@ -120,7 +120,7 @@ class TrueOnlineSarsaLambda(Agent):
         :return:
         """
         if random.random() < self.epsilon:
-            actions = self.domain.get_actions(state)
+            actions = self.domain.get_actions()
             return random.sample(actions, 1)[0]
         else:
             best_actions = self.value_function.bestactions(state, self.feature_extractor)

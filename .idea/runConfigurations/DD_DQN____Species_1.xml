@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Q-network one pitch" type="PythonConfigurationType" factoryName="Python" singleton="true">
+  <configuration default="false" name="DD DQN -  Species 1" type="PythonConfigurationType" factoryName="Python" singleton="true">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -13,7 +13,7 @@
     <module name="counterpoint-reinforcement-learning" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/runner.py" />
-    <option name="PARAMETERS" value="3 results/3 -period 1000 -evaluations 200" />
+    <option name="PARAMETERS" value="5 results/5  -evaluations 100" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>

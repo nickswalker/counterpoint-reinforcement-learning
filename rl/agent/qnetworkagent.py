@@ -73,12 +73,9 @@ class QNetworkAgent(Agent):
 
         if terminal:
             step_summary = "Loss %.2f r %d" % (loss, self.current_cumulative_reward)
-            print(step_summary)
+            # print(step_summary)
 
         self.current_cumulative_reward += r
-        if terminal:
-            ()
-            # print(self._log_policy() + " " + str(self.current_cumulative_reward))
 
     def get_cumulative_reward(self) -> float:
         return self.current_cumulative_reward

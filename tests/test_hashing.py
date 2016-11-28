@@ -18,8 +18,8 @@ class TestHashing(unittest.TestCase):
     def test_state_hashing(self):
         note = HashableNote(NamedPitch("A3"), Duration(1, 4))
         duplicate_note = HashableNote(NamedPitch("A3"), Duration(1, 4))
-        state = CompositionState(Duration(0), (note, duplicate_note))
-        duplicate_state = CompositionState(Duration(0), (duplicate_note, note))
+        state = CompositionState(Duration(0), (note, duplicate_note), None)
+        duplicate_state = CompositionState(Duration(0), (duplicate_note, note), None)
 
         self.assertEqual(state, duplicate_state)
         self.assertEqual(hash(state), hash(duplicate_state))

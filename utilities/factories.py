@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Tuple, List
 
 from abjad.tools.durationtools.Duration import Duration
@@ -19,45 +20,45 @@ from rl.domain import Domain
 from rl.task import Task
 
 
+class Approach(Enum):
+    QLearning = 0
+    Sarsa = 1
+    TrueOnlineSarsaLambda = 2
+    QNetwork = 3
+    DDDQN = 4
+    DDDRQN = 5
+
+
 def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale,
-                             task_class: CounterpointTask = SpeciesOneCounterpoint):
+                             task_class: CounterpointTask = SpeciesOneCounterpoint, history_length: int = 2):
     def generate_environment() -> Tuple[Domain, Task]:
         composition_parameters = CompositionParameters([("contrapuntal", soprano_range), ("cantus", tenor_range)],
                                                        meter,
                                                        scale, Duration(4))
-        domain = CompositionEnvironment(composition_parameters)
+        domain = CompositionEnvironment(composition_parameters, history_length=history_length)
         task = task_class(domain)
         return domain, task
 
     return generate_environment
 
 
-def make_agent_factory(initial_value=0.5,
-                       epsilon=0.9,
-                       alpha=0.5,
-                       lmbda=0.95,
-                       expected=False, true_online=False, q_learning=False, approximation=False, q_network=False,
-                       lstm_network=False):
+def make_agent_factory(approach: Approach, initial_value=0.5, epsilon=0.9, alpha=0.5, lmbda=0.95):
     def generate_agent(domain, task, table):
-        if true_online:
-            agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
-        elif lstm_network:
-            extractor = MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice,
-                                              domain.history_length)
-            agent = DuelingQNetworkAgent(domain, task, extractor, epsilon=epsilon, alpha=alpha, value_function=table)
-        elif q_learning:
-            agent = QLearning(domain, task)
-        elif q_network:
-            extractor = MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice,
-                                              domain.history_length)
+        extractor = MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice,
+                                          domain.history_length)
+        if approach == Approach.QLearning:
+            agent = QLearning(domain, task, epsilon=epsilon, alpha=alpha)
+        elif approach == Approach.Sarsa:
+            agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
+        elif approach == Approach.TrueOnlineSarsaLambda:
+            agent = TrueOnlineSarsaLambda(domain, task, extractor, epsilon=epsilon, alpha=alpha, lamb=lmbda,
+                                          expected=False)
+        elif approach == Approach.QNetwork:
             agent = QNetworkAgent(domain, task, feature_extractor=extractor, epsilon=epsilon, alpha=alpha,
                                   value_function=table)
-        else:
-            if approximation:
-                agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, expected=expected)
-            else:
-                agent = TrueOnlineSarsaLambda(domain, task, MusicFeatureExtractor(), epsilon=epsilon, alpha=alpha,
-                                              expected=expected)
+        elif approach == Approach.DDDQN:
+            agent = DuelingQNetworkAgent(domain, task, extractor, epsilon=epsilon, alpha=alpha, value_function=table)
+
         return agent
 
     return generate_agent

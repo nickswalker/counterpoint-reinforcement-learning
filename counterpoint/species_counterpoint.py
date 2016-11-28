@@ -71,36 +71,31 @@ class SpeciesOneCounterpoint(CounterpointTask):
             if interval.direction_string == "down":
                 penalties -= 1
             if abs(interval.semitones) in constants.dissonant_intervals:
-                penalties -= 1
+                penalties -= 5
             # No harmonic intervals greater than a 12th
             if abs(interval.semitones) > NamedInterval("P12").semitones:
-                penalties -= 2
+                penalties -= 5
             # Tenth is pushing it
             elif abs(interval.semitones) > NamedInterval("M10").semitones:
                 penalties -= 1
 
             maximum_extent = vertical_moment.offset + vertical_moment.leaves[0].written_duration
             if maximum_extent == composition.composition_parameters.duration:
-
+                last_top = degrees[0][-1]
+                last_bottom = degrees[1][-1]
                 prev_top = degrees[0][-2]
                 prev_bottom = degrees[1][-2]
-                if degrees[0][-1] != ScaleDegree(1) or degrees[1][-1] != ScaleDegree(1):
-                    penalties -= 1
-                if not (prev_top == ScaleDegree(7) and prev_bottom == ScaleDegree(2) or (
+                # Use an authentic cadence
+                if last_top != ScaleDegree(1) or last_top != ScaleDegree(1):
+                    penalties -= 10
+                if not ((prev_top == ScaleDegree(7) and prev_bottom == ScaleDegree(2)) or (
                         prev_top == ScaleDegree(2) and prev_bottom == ScaleDegree(7))):
-                    penalties -= 1
-                # Make sure we approach the end with contrary stepwise motion
-                prev_slice = vertical_moments[i - 1]
-                motion = self.sices_to_motion(prev_slice, vertical_moment)
-                if motion is not RelativeMotion.contrary:
-                    penalties -= 1
+                    penalties -= 10
 
             elif i is 0:
-                # First interval should have a do on the bottom
+                # First interval should be a tonic unison
                 if degrees[0][0] != ScaleDegree(1) or degrees[1][0] != ScaleDegree(1):
-                    penalties -= 1
-                if interval is not NamedInterval("P8"):
-                    penalties -= 1
+                    penalties -= 5
             if i > 0:
                 prev_interval = intervals[i - 1]
                 prev_slice = vertical_moments[i - 1]
@@ -113,29 +108,43 @@ class SpeciesOneCounterpoint(CounterpointTask):
                 count = melodic_interval_tally.get(upper, 0) + 1
                 melodic_interval_tally[upper] = count
 
-                if abs(lower.semitones) > 4:
-                    penalties -= 10
-                if abs(upper.semitones) > 4:
-                    penalties -= 10
 
                 motion = MusicFeatureExtractor.characterize_relative_motion(upper, lower)
+                # Lines should always be moving
                 if motion is RelativeMotion.none:
-                    penalties -= 1
+                    penalties -= 5
 
                 # Never have two perfect consonances in a row
                 if prev_interval.semitones == interval.semitones and interval.quality_string == "perfect":
-                    penalties -= 1
+                    penalties -= 5
 
-            if i > 2:
-                prev_interval = intervals[i - 1]
-                prev_prev_interval = intervals[i - 2]
-                prev_prev_prev_interval = intervals[i - 3]
+                if i > 2:
+                    prev_prev_interval = intervals[i - 2]
+                    prev_prev_prev_interval = intervals[i - 3]
 
-                all_same = interval == prev_interval == prev_prev_interval == prev_prev_prev_interval
-                if all_same:
-                    if interval.semitones in constants.consonant_intervals:
-                        penalties -= 1
+                    all_same = interval == prev_interval == prev_prev_interval == prev_prev_prev_interval
+                    # Don't have the same interval more than three times in a row
+                    if all_same:
+                        penalties -= 5
 
+                    lower_prev, upper_prev = self.slices_to_melodic_intervals(vertical_moments[i - 2], prev_slice)
+
+                    # Encourage counterstepwise motion.
+                    # If the prev motion was a leap..
+                    if self.is_leap(lower_prev):
+                        # It needs to be resolved by a step, and the step needs to be in the opposite direction
+                        if not self.is_step(lower) or (lower_prev.semitones > 0 ^ lower.semitones > 0):
+                            penalties -= 5
+                        else:
+                            print("we did it")
+
+                    if self.is_leap(upper_prev):
+                        if not self.is_step(upper) or (upper_prev.semitones > 0 ^ upper.semitones > 0):
+                            penalties -= 5
+                        else:
+                            print("we did it")
+
+        """
         for pitch, num in pitch_tally.items():
             if num > 2:
                 penalties -= 5 * num
@@ -147,8 +156,15 @@ class SpeciesOneCounterpoint(CounterpointTask):
         for interval, num in melodic_interval_tally.items():
             if num > 5:
                 penalties -= 5 * num
+        """
 
         return penalties
+
+    def is_leap(self, interval):
+        return abs(interval.semitones) > 5
+
+    def is_step(self, interval):
+        return 0 < abs(interval.semitones) < 3
 
     def slices_to_melodic_intervals(self, first, second) -> Tuple[NamedInterval, NamedInterval]:
         first_lower = first.leaves[0]

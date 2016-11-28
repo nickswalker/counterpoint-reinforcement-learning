@@ -27,7 +27,7 @@ class Sarsa(Agent):
         self.previousaction = None
         self.previousstate = None
 
-        self.value_function = StateActionValueTable(domain.get_actions(domain.get_current_state()))
+        self.value_function = StateActionValueTable(domain.get_actions())
         self.current_cumulative_reward = 0.0
 
     def act(self):
@@ -79,7 +79,7 @@ class Sarsa(Agent):
         :return:
         """
         if random.random() < self.epsilon:
-            actions = self.domain.get_actions(state)
+            actions = self.domain.get_actions()
             return random.sample(actions, 1)[0]
         else:
             best_actions = self.value_function.bestactions(state)
@@ -116,6 +116,7 @@ class Sarsa(Agent):
         self.current_cumulative_reward = 0.0
         self.previousaction = None
         self.previousstate = None
+        self.epsilon *= .9999
 
     def logepisode(self):
         print("Episode reward: " + str(self.current_cumulative_reward))

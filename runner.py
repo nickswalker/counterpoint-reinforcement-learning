@@ -6,7 +6,7 @@ import numpy as np
 from cantus_firmi import cantus_firmi
 from counterpoint.species_counterpoint import SpeciesOneCounterpoint
 from counterpoint.test_tasks import ScalesAreGood
-from utilities.factories import make_environment_factory, make_agent_factory
+from utilities.factories import make_environment_factory, make_agent_factory, Approach
 from utilities.save_composition import save_composition
 from utilities.trial_log import ExperimentLog
 
@@ -23,6 +23,7 @@ def main():
     parser.add_argument('-period', type=int, default=100)
     parser.add_argument('-unique-id', type=int)
     parser.add_argument('--log-evaluations', type=int)
+    parser.add_argument("-history", type=int, default=3)
 
     args = parser.parse_args()
 
@@ -31,6 +32,7 @@ def main():
     num_evaluations = args.evaluations
     evaluation_period = args.period
     output_dir = args.outdir
+    history_length = args.history
 
     def save(name, log: ExperimentLog, out_dir: str, unique_num: int = 0):
 
@@ -49,56 +51,57 @@ def main():
                    fmt=["%d", "%f", "%f", "%f"],
                    delimiter=",")
 
+    meter = cantus_firmi[0][1]
+    key = cantus_firmi[0][2]
     if experiment_num == 1:
-        cantus = cantus_firmi[0][0]
-        meter = cantus_firmi[0][1]
-        key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([], meter, key, ScalesAreGood)
-        agent_factory = make_agent_factory(q_learning=True)
-        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+        environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length)
+        agent_factory = make_agent_factory(Approach.QLearning)
+        qlearning_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
-        save("Q-learning", qnetwork_results, output_dir, args.unique_id)
+        save("Q-learning", qlearning_results, output_dir, args.unique_id)
     elif experiment_num == 2:
-        meter = cantus_firmi[0][1]
-        key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint)
-        agent_factory = make_agent_factory(q_learning=True)
-        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length)
+        agent_factory = make_agent_factory(Approach.QLearning, epsilon=0.4)
+        qlearning_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
-        save("Q-learning", qnetwork_results, output_dir, args.unique_id)
+        save("Q-learning", qlearning_results, output_dir, args.unique_id)
+
     elif experiment_num == 3:
-        cantus = cantus_firmi[0][0]
-        meter = cantus_firmi[0][1]
-        key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([], meter, key, ScalesAreGood)
-        agent_factory = make_agent_factory(q_network=True)
+        environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length)
+        agent_factory = make_agent_factory(Approach.QNetwork, alpha=0.01)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
         save("Q-network", qnetwork_results, output_dir, args.unique_id)
     elif experiment_num == 4:
-        meter = cantus_firmi[0][1]
-        key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint)
-        agent_factory = make_agent_factory(q_network=True)
+        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length)
+        agent_factory = make_agent_factory(Approach.QNetwork)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
         save("Q-network", qnetwork_results, output_dir, args.unique_id)
     elif experiment_num == 5:
-        meter = cantus_firmi[0][1]
-        key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint)
-        agent_factory = make_agent_factory(lstm_network=True, alpha=0.001)
+        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length)
+        agent_factory = make_agent_factory(Approach.DDDQN, alpha=0.001, epsilon=1.0)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
         save("Double Dueling DQN", qnetwork_results, output_dir, args.unique_id)
     elif experiment_num == 6:
-        meter = cantus_firmi[0][1]
-        key = cantus_firmi[0][2]
-        environment_factory = make_environment_factory([], meter, key, ScalesAreGood)
-        agent_factory = make_agent_factory(lstm_network=True, alpha=0.5, epsilon=1.0)
+        environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length)
+        agent_factory = make_agent_factory(Approach.DDDQN, alpha=0.5, epsilon=1.0)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
         save("Double Dueling DQN", qnetwork_results, output_dir, args.unique_id)
+    elif experiment_num == 7:
+        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length)
+        agent_factory = make_agent_factory(Approach.Sarsa, epsilon=0.4)
+        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                       environment_factory, output_dir)
+        save("Sarsa", sarsa_results, output_dir, args.unique_id)
+    elif experiment_num == 8:
+        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length)
+        agent_factory = make_agent_factory(Approach.TrueOnlineSarsaLambda, epsilon=0.4)
+        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                       environment_factory, output_dir)
+        save("True Online Sarsa Lambda", sarsa_results, output_dir, args.unique_id)
 
 
 def run_experiment(num_trials, num_evaluations, evaluation_period,
@@ -157,7 +160,7 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
     """
     domain, task = environment_factory()
     agent = agent_factory(domain, task, None)
-
+    reward = 0
     stops = 0
     for i in range(0, evaluation_period * num_stops):
         if i % evaluation_period is 0:
@@ -168,7 +171,6 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
             return
         terminated = False
 
-        # print(i)
         current_step = 0
         while not terminated:
             current_step += 1
@@ -176,9 +178,13 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
 
             if task.stateisfinal(domain.get_current_state()):
                 final_state = domain.get_current_state()
+                reward = agent.get_cumulative_reward()
                 agent.episode_ended()
                 domain.reset()
                 terminated = True
+
+        if i % 10 == 0:
+            print("%d: %f" % (i, reward))
 
 
 

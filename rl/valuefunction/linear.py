@@ -33,7 +33,7 @@ class LinearVFA:
         best_actions = []
         best_value = float("-inf")
         for action in self.actions:
-            state_features = extractor.extract(state, action)
+            state_features = extractor.extract(state)
             value = self.actionvalue(state_features, action)
             if value > best_value:
                 best_value = value
