@@ -34,7 +34,6 @@ class GradedCounterpointTask(CounterpointTask):
         self.differential = differential
         self.prev_duration = Duration(0)
         self.prev_grade = 0.0
-        self.differential = differential
 
     @abstractmethod
     def grade_composition(self, composition):

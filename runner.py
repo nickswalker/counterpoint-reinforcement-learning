@@ -27,8 +27,7 @@ def main():
     parser.add_argument('--feature', dest='feature', action='store_true')
     parser.add_argument('--no-feature', dest='feature', )
 
-    parser.add_argument("--time-invariant-state", dest="time-invariant-state", action='store_false')
-    parser.set_defaults(time_invariant_state=True)
+    parser.add_argument("--time-invariant-state", action='store_true', default=False)
     args = parser.parse_args()
 
     experiment_num = args.experiment
@@ -50,10 +49,12 @@ def main():
         if log.n > 1:
             log.finalize_confidences()
             data = np.c_[(log.series, log.means, log.variances, log.confidences)]
+            formats = ["%d", "%f", "%f", "%f"]
         else:
             data = np.c_[(log.series, log.means)]
+            formats = ["%d", "%f"]
         np.savetxt(full_out_path, data,
-                   fmt=["%d", "%f", "%f", "%f"],
+                   fmt=formats,
                    delimiter=",")
 
     meter = cantus_firmi[0][1]
@@ -104,7 +105,7 @@ def main():
     elif experiment_num == 7:
         environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
                                                        time_invariant_state)
-        agent_factory = make_agent_factory(Approach.Sarsa, epsilon=0.4)
+        agent_factory = make_agent_factory(Approach.Sarsa, epsilon=0.4, alpha=0.1, lmbda=0.5)
         sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                        environment_factory, output_dir)
         save("Sarsa", sarsa_results, output_dir, args.unique_id)

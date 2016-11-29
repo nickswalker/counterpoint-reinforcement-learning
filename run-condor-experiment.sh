@@ -33,9 +33,10 @@ OUTPUT_DIR="$OUTPUT_DIR/$TIMESTAMP"
 mkdir -p "$OUTPUT_DIR/logs"
 mkdir -p "$OUTPUT_DIR/out"
 
+UNIQUE_OUTPUT_DIR="$OUTPUT_DIR/\$(Process)"
 
 # Form the final arguments string that we'll give to Python
-ARGUMENTS="${FULL_SCRIPT_PATH} ${EXPERIMENT_NUM} ${OUTPUT_DIR} -trials 1 -unique-id \$(Process) ${OTHER_ARGUMENTS}"
+ARGUMENTS="${FULL_SCRIPT_PATH} ${EXPERIMENT_NUM} ${UNIQUE_OUTPUT_DIR} -trials 1 -unique-id \$(Process) ${OTHER_ARGUMENTS}"
 
 # Condor wants the full path to the Python executable
 PYTHON_PATH="$( which python3.5)"
