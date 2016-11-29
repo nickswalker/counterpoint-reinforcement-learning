@@ -50,7 +50,7 @@ class MusicFeatureExtractor(StateFeatureExtractor):
                     section[-1] = 1
                     features += section
 
-        beat = int(float(state.preceding_duration) / 0.25)
+        beat = int(float(state.preceding_duration) / 1.00)
         beat_section = [0] * self.max_beats
         beat_section[beat] = 1
         features += beat_section

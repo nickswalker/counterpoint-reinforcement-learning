@@ -14,8 +14,8 @@ from counterpoint.species_counterpoint import CounterpointTask, SpeciesOneCounte
 from rl.agent.duelingqnetworkagent import DuelingQNetworkAgent
 from rl.agent.qlearning import QLearning
 from rl.agent.qnetworkagent import QNetworkAgent
-from rl.agent.sarsa import Sarsa
 from rl.agent.trueonlinesarsalambda import TrueOnlineSarsaLambda
+from rl.agent.trueonlinesarsalambdavfa import TrueOnlineSarsaLambdaVFA
 from rl.domain import Domain
 from rl.task import Task
 
@@ -51,10 +51,10 @@ def make_agent_factory(approach: Approach, initial_value=0.5, epsilon=0.9, alpha
         if approach == Approach.QLearning:
             agent = QLearning(domain, task, epsilon=epsilon, alpha=alpha)
         elif approach == Approach.Sarsa:
-            agent = Sarsa(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
+            agent = TrueOnlineSarsaLambda(domain, task, epsilon=epsilon, alpha=alpha, lamb=lmbda, expected=False)
         elif approach == Approach.TrueOnlineSarsaLambda:
-            agent = TrueOnlineSarsaLambda(domain, task, extractor, epsilon=epsilon, alpha=alpha, lamb=lmbda,
-                                          expected=False)
+            agent = TrueOnlineSarsaLambdaVFA(domain, task, extractor, epsilon=epsilon, alpha=alpha, lamb=lmbda,
+                                             expected=False)
         elif approach == Approach.QNetwork:
             agent = QNetworkAgent(domain, task, feature_extractor=extractor, epsilon=epsilon, alpha=alpha,
                                   value_function=table)

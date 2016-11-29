@@ -112,6 +112,7 @@ class QLearning(Agent):
         self.current_cumulative_reward = 0.0
         self.previousaction = None
         self.previousstate = None
+        self.epsilon *= .99999
 
     def logepisode(self):
         print("Episode reward: " + str(self.current_cumulative_reward))

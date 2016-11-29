@@ -112,7 +112,7 @@ class QNetwork:
             # q values (standard q update) and the state features for the state we just observed a reward from.
             self.target_qvalues = tf.placeholder(shape=[1, self.n_actions], dtype=tf.float32)
             self.loss = tf.reduce_sum(tf.square(self.target_qvalues - self.q_out))
-            trainer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+            trainer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
             self.updateModel = trainer.minimize(self.loss)
 
         self.session = tf.Session()

@@ -1,19 +1,17 @@
 import random
 
-import numpy as np
-
 from rl.action import Action
 from rl.agent.agent import Agent
 from rl.domain import Domain
 from rl.state import State
 from rl.task import Task
-from rl.valuefunction import FeatureExtractor
-from rl.valuefunction.linear import LinearVFA
+from rl.valuefunction.tabular import StateActionValueTable
 
 
 class TrueOnlineSarsaLambda(Agent):
-    def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.1, alpha=0.6,
-                 gamma=0.95, lamb=0.95, expected=False, name="True Online Sarsa(λ)"):
+    def __init__(self, domain: Domain, task: Task, epsilon=0.1, alpha=0.6, gamma=0.95, lamb=0.95, expected=False,
+                 feature_extractor=None,
+                 name="Sarsa"):
         """
         :param domain: The world the agent is placed in.
         :param task: The task in the world, which defines the reward function.
@@ -28,14 +26,11 @@ class TrueOnlineSarsaLambda(Agent):
         self.expected = expected
         self.previousaction = None
         self.previousstate = None
-        self.value_old = 0.0
 
-        example_state = domain.get_current_state()
-        actions = domain.get_actions()
-        self.feature_extractor = feature_extractor
-        self.eligibility = np.zeros(self.feature_extractor.num_features())
-        self.value_function = LinearVFA(self.feature_extractor.num_features(), actions)
+        self.value_function = StateActionValueTable(domain.get_actions())
         self.current_cumulative_reward = 0.0
+        self.eligibility = {}
+        self.v_old = 0
 
     def act(self):
         """Execute one action on the world, possibly terminating the episode.
@@ -51,67 +46,45 @@ class TrueOnlineSarsaLambda(Agent):
         if self.previousstate is None and self.previousaction is None:
             ()
         else:
-            self.value_old = self.update(self.previousstate, self.previousaction, state, action, self.value_old)
+            self.update(self.previousstate, self.previousaction, state, action)
 
         self.previousaction = action
         self.previousstate = state
 
         state_prime = self.world.get_current_state()
         if self.task.stateisfinal(state_prime):
-            self.update(state, action, state_prime, None, self.value_old, terminal=True)
+            self.update(state, action, state_prime, None, terminal=True)
 
-    def update(self, state: State, action: Action, state_prime: State, action_prime: Action, value_old: float,
-               terminal=False):
+    def update(self, state: State, action: Action, state_prime: State, action_prime: Action, terminal=False):
         reward = self.task.reward(state, action, state_prime)
-
-        state_weights = np.array(self.value_function.weightsfor(action))
-        state_features = np.array(self.feature_extractor.extract(state))
-
-        value_prime = np.dot(state_weights, state_features)
-        value = np.dot(state_weights, state_features)
-
-        self._update_traces(state_features)
-        # Terminal states are defined to have value 0
+        v_s = self.value_function.actionvalue(state, action)
         if terminal:
-            value_prime = 0
+            v_s_prime = 0
         else:
             if self.expected:
-                value_prime = self.expected_value(state_prime)
-
+                v_s_prime = self.expected_value(state_prime)
             else:
-                state_prime_features = np.array(self.feature_extractor.extract(state_prime))
-                value_prime = np.dot(state_weights, state_prime_features)
+                v_s_prime = self.value_function.actionvalue(state_prime, action_prime)
+        delta_v = v_s - self.v_old
+        self.v_old = v_s_prime
+        # Terminal states are defined to have value 0
 
-        delta = reward + self.gamma * value_prime - value
-        weights_target = delta * self.eligibility + self.alpha * (
-            value - np.dot(state_weights, state_features)) * state_features
-        updated_weights = state_weights + weights_target
+        delta = reward + self.gamma * v_s_prime - v_s
 
-        # updated_weights = self._clear_weights(updated_weights)
-        self.value_function.updateweightsfor(updated_weights, action)
-        value_old = self.value_function.actionvalue(state_features, action)
+        s_a = (state, action)
+        visited_e_update = (1.0 - self.alpha) * self.eligibility.get(s_a, 0.0) + 1
+        self.eligibility[s_a] = visited_e_update
 
+        for pair, e_value in self.eligibility.items():
+            trace_v_s = self.value_function.actionvalue(pair[0], pair[1])
+            new_value = trace_v_s + self.alpha * (delta + delta_v) * e_value
+            self.value_function.setactionvalue(pair[0], pair[1], new_value)
+            self.eligibility[pair] = self.gamma * self.lamb * e_value
+        # Value of state was updated by the trace
+        v_s = self.value_function.actionvalue(state, action)
+        new_value = v_s - self.alpha * delta_v
+        self.value_function.setactionvalue(state, action, new_value)
         self.current_cumulative_reward += reward
-
-        self._eligibility_clear()
-        return value_old
-
-    def _clear_weights(self, weights):
-        for i in range(0, len(weights)):
-            if weights[i] < 0.000001:
-                weights[i] = 0.0
-        return weights
-
-    def _update_traces(self, state_features):
-        discounted_eligibility = self.gamma * self.lamb * self.eligibility
-        eligibility_target = self.alpha * (1 - self.gamma * self.lamb * np.dot(self.eligibility,
-                                                                               state_features)) * state_features
-        self.eligibility = discounted_eligibility + eligibility_target
-
-    def _eligibility_clear(self):
-        for i in range(0, len(self.eligibility)):
-            if self.eligibility[i] < 0.00001:
-                self.eligibility[i] = 0.0
 
     def choose_action(self, state) -> Action:
         """Given a state, pick an action according to an epsilon-greedy policy.
@@ -123,7 +96,7 @@ class TrueOnlineSarsaLambda(Agent):
             actions = self.domain.get_actions()
             return random.sample(actions, 1)[0]
         else:
-            best_actions = self.value_function.bestactions(state, self.feature_extractor)
+            best_actions = self.value_function.bestactions(state)
             return random.sample(best_actions, 1)[0]
 
     def expected_value(self, state):
@@ -157,7 +130,9 @@ class TrueOnlineSarsaLambda(Agent):
         self.current_cumulative_reward = 0.0
         self.previousaction = None
         self.previousstate = None
-        self.value_old = 0.0
+        self.epsilon *= .9999
+        self.eligibility = {}
+        self.v_old = 0
 
     def logepisode(self):
         print("Episode reward: " + str(self.current_cumulative_reward))
