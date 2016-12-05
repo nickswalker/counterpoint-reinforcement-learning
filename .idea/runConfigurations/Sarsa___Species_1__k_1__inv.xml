@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Q-learning - Species 1 (k=1)" type="PythonConfigurationType" factoryName="Python" singleton="true">
+  <configuration default="false" name="Sarsa - Species 1 (k=1) inv" type="PythonConfigurationType" factoryName="Python" singleton="true">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -13,7 +13,7 @@
     <module name="counterpoint-reinforcement-learning" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/runner.py" />
-    <option name="PARAMETERS" value="1 0 results/s0-q-1 -evaluations 100 -history 1" />
+    <option name="PARAMETERS" value="1 1 results/s0-s-1-i -evaluations 200 -history 1 --time-invariant-state" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>

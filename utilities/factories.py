@@ -28,6 +28,21 @@ class Approach(Enum):
     DDDQN = 4
     DDDRQN = 5
 
+    def __str__(self):
+        if self == Approach.QLearning:
+            return "Q-learning"
+        elif self == Approach.Sarsa:
+            return "Sarsa"
+        elif self == Approach.TrueOnlineSarsaLambda:
+            return "True Online Sarsa(l)"
+        elif self == Approach.QNetwork:
+            return "QNetwork"
+        elif self == Approach.DDDQN:
+            return "Double Dueling DQN"
+        elif self == Approach.DDDRQN:
+            return "Double Dueling DRQN"
+
+
 
 def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale,
                              task_class: CounterpointTask = SpeciesOneCounterpoint, history_length: int = 2,

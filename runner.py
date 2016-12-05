@@ -16,10 +16,14 @@ significance_level = 0.05
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("experiment", type=int)
+    parser.add_argument("task", type=int)
+    parser.add_argument("agent", type=int)
     parser.add_argument("outdir", type=str)
     parser.add_argument('-trials', type=int, default=1)
     parser.add_argument('-evaluations', type=int, default=10)
+    parser.add_argument('-lamb', type=float, default=0.5)
+    parser.add_argument('-alpha', type=float, default=0.4)
+    parser.add_argument('-epsilon', type=float, default=0.9)
     parser.add_argument('-period', type=int, default=100)
     parser.add_argument('-unique-id', type=int)
     parser.add_argument('--log-evaluations', type=int)
@@ -30,76 +34,44 @@ def main():
     parser.add_argument("--time-invariant-state", action='store_true', default=False)
     args = parser.parse_args()
 
-    experiment_num = args.experiment
+    task = args.task
+    agent = args.agent
     num_trials = args.trials
     num_evaluations = args.evaluations
     evaluation_period = args.period
     output_dir = args.outdir
     history_length = args.history
     time_invariant_state = args.time_invariant_state
+    alpha = args.alpha
+    lamb = args.lamb
+    epsilon = args.epsilon
 
     meter = cantus_firmi[0][1]
     key = cantus_firmi[0][2]
-    results = None
-    if experiment_num == 1:
-        environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length,
-                                                       time_invariant_state)
-        agent_factory = make_agent_factory(Approach.QLearning)
-        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                 environment_factory, output_dir)
-        agent_name = "Q-learning"
-    elif experiment_num == 2:
-        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
-                                                       time_invariant_state)
-        agent_factory = make_agent_factory(Approach.QLearning, epsilon=0.4)
-        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                 environment_factory, output_dir)
-        agent_name = "Q-learning"
 
-    elif experiment_num == 3:
+    if task is 0:
         environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length,
                                                        time_invariant_state)
-        agent_factory = make_agent_factory(Approach.QNetwork, alpha=0.01)
-        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                 environment_factory, output_dir)
-        agent_name = "Q-network"
-    elif experiment_num == 4:
+    elif task == 1:
         environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
                                                        time_invariant_state)
-        agent_factory = make_agent_factory(Approach.QNetwork)
-        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                          environment_factory, output_dir)
-        agent_name = "Q-network"
-    elif experiment_num == 5:
-        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
-                                                       time_invariant_state)
-        agent_factory = make_agent_factory(Approach.DDDQN, alpha=0.001, epsilon=1.0)
-        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                 environment_factory, output_dir)
-        agent_name = "Double Dueling DQN"
-    elif experiment_num == 6:
-        environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length,
-                                                       time_invariant_state)
-        agent_factory = make_agent_factory(Approach.DDDQN, alpha=0.5, epsilon=1.0)
-        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                 environment_factory, output_dir)
-        agent_name = "Double Dueling DQN"
-    elif experiment_num == 7:
-        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
-                                                       time_invariant_state)
-        agent_factory = make_agent_factory(Approach.Sarsa, epsilon=0.4, alpha=0.1, lmbda=0.5)
-        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                 environment_factory, output_dir)
-        agent_name = "True Online Sarsa(l)"
-    elif experiment_num == 8:
-        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
-                                                       time_invariant_state)
-        agent_factory = make_agent_factory(Approach.TrueOnlineSarsaLambda, epsilon=0.4)
-        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                 environment_factory, output_dir)
-        agent_name = "True Online Sarsa(l)"
+    if agent == 0:
+        approach = Approach.QLearning
+    elif agent == 1:
+        approach = Approach.Sarsa
+    elif agent == 2:
+        approach = Approach.TrueOnlineSarsaLambda
+    elif agent == 3:
+        approach = Approach.QNetwork
+    elif agent == 3:
+        approach = Approach.DDDQN
 
-    save(agent_name, experiment_num, results, output_dir, args.unique_id)
+    agent_factory = make_agent_factory(approach, epsilon=epsilon, alpha=alpha, lmda=lamb)
+    agent_name = str(approach)
+    results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                 environment_factory, output_dir)
+
+    save(agent_name, results, output_dir, args.unique_id)
 
 
 def run_experiment(num_trials, num_evaluations, evaluation_period,
@@ -148,12 +120,12 @@ def evaluate(table, agent_factory, environment_factory, unique_name: str, out_di
     return cumulative_reward
 
 
-def save(name: str, experiment_num: int, log: ExperimentLog, out_dir: str, unique_num: int = 0):
+def save(name: str, log: ExperimentLog, out_dir: str, unique_num: int = 0):
     out_prefix = out_dir
 
     if not os.path.exists(out_prefix):
         os.makedirs(out_prefix)
-    filename = str(experiment_num) + "_" + str(log.n) + "_" + name + str(unique_num) + ".csv"
+    filename = str(log.n) + "_" + name + str(unique_num) + ".csv"
     full_out_path = os.path.join(out_prefix, filename)
     if log.n > 1:
         log.finalize_confidences()

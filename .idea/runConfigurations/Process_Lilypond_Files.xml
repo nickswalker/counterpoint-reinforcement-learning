@@ -13,7 +13,7 @@
     <module name="counterpoint-reinforcement-learning" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/process_lilypond_files.py" />
-    <option name="PARAMETERS" value="results/2-11" />
+    <option name="PARAMETERS" value="results/s-1-i" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>
