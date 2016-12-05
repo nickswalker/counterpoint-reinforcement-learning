@@ -2,23 +2,25 @@
 
 ###### Arguments ########
 # 1) Script to run      #
-# 2) Experiment num     #
-# 3) Num trials         #
-# 4) Output directory   #
-# 5) Other script arguments #
+# 2) Experiment name
+# 3) Experiment num     #
+# 4) Num trials         #
+# 5) Output directory   #
+# 6) Other script arguments #
 #########################
 
-if [ "$#" -ne 5 ]; then
+if [ "$#" -ne 6 ]; then
     echo "Incorrect parameters"
     exit 1
 fi
 
 # Grab the arguments
 SCRIPT_NAME="$1"
-EXPERIMENT_NUM="$2"
-NUM_TRIALS="$3"
-OUTPUT_DIRECTORY="$4"
-OTHER_ARGUMENTS="$5"
+EXPERIMENT_NAME="$2"
+EXPERIMENT_NUM="$3"
+NUM_TRIALS="$4"
+OUTPUT_DIRECTORY="$5"
+OTHER_ARGUMENTS="$6"
 
 
 # Clean the arguments
@@ -27,8 +29,8 @@ OUTPUT_DIR="$( readlink -f $OUTPUT_DIRECTORY )"
 
 # Make a timestamped directory in the out dir that was passed in
 
-TIMESTAMP="$(date +%a-%b-%d-%T)"
-OUTPUT_DIR="$OUTPUT_DIR/$TIMESTAMP"
+TIMESTAMP="$(date +%a-%b-%d-%H-%M)"
+OUTPUT_DIR="$OUTPUT_DIR/$EXPERIMENT_NAME-$TIMESTAMP"
 
 mkdir -p "$OUTPUT_DIR/logs"
 mkdir -p "$OUTPUT_DIR/out"
@@ -52,7 +54,7 @@ Environment     = HOME=tmp/;
 
 +Group = "UNDER"
 +Project = "AI_ROBOTICS"
-+ProjectDescription = "Experiments with applying reinforcement learning to counter point"
++ProjectDescription = "Experiments with applying reinforcement learning to counterpoint composition"
 
 Arguments       = $ARGUMENTS
 Queue $NUM_TRIALS

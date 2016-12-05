@@ -38,84 +38,68 @@ def main():
     history_length = args.history
     time_invariant_state = args.time_invariant_state
 
-    def save(name, log: ExperimentLog, out_dir: str, unique_num: int = 0):
-
-        out_prefix = out_dir
-
-        if not os.path.exists(out_prefix):
-            os.makedirs(out_prefix)
-        filename = str(experiment_num) + "_" + str(num_trials) + "_" + name + str(unique_num) + ".csv"
-        full_out_path = os.path.join(out_prefix, filename)
-        if log.n > 1:
-            log.finalize_confidences()
-            data = np.c_[(log.series, log.means, log.variances, log.confidences)]
-            formats = ["%d", "%f", "%f", "%f"]
-        else:
-            data = np.c_[(log.series, log.means)]
-            formats = ["%d", "%f"]
-        np.savetxt(full_out_path, data,
-                   fmt=formats,
-                   delimiter=",")
-
     meter = cantus_firmi[0][1]
     key = cantus_firmi[0][2]
+    results = None
     if experiment_num == 1:
         environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length,
                                                        time_invariant_state)
         agent_factory = make_agent_factory(Approach.QLearning)
-        qlearning_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                          environment_factory, output_dir)
-        save("Q-learning", qlearning_results, output_dir, args.unique_id)
+        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                 environment_factory, output_dir)
+        agent_name = "Q-learning"
     elif experiment_num == 2:
         environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
                                                        time_invariant_state)
         agent_factory = make_agent_factory(Approach.QLearning, epsilon=0.4)
-        qlearning_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                          environment_factory, output_dir)
-        save("Q-learning", qlearning_results, output_dir, args.unique_id)
+        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                 environment_factory, output_dir)
+        agent_name = "Q-learning"
 
     elif experiment_num == 3:
         environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length,
                                                        time_invariant_state)
         agent_factory = make_agent_factory(Approach.QNetwork, alpha=0.01)
-        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                          environment_factory, output_dir)
-        save("Q-network", qnetwork_results, output_dir, args.unique_id)
+        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                 environment_factory, output_dir)
+        agent_name = "Q-network"
     elif experiment_num == 4:
         environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
                                                        time_invariant_state)
         agent_factory = make_agent_factory(Approach.QNetwork)
         qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
                                           environment_factory, output_dir)
-        save("Q-network", qnetwork_results, output_dir, args.unique_id)
+        agent_name = "Q-network"
     elif experiment_num == 5:
         environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
                                                        time_invariant_state)
         agent_factory = make_agent_factory(Approach.DDDQN, alpha=0.001, epsilon=1.0)
-        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                          environment_factory, output_dir)
-        save("Double Dueling DQN", qnetwork_results, output_dir, args.unique_id)
+        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                 environment_factory, output_dir)
+        agent_name = "Double Dueling DQN"
     elif experiment_num == 6:
         environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length,
                                                        time_invariant_state)
         agent_factory = make_agent_factory(Approach.DDDQN, alpha=0.5, epsilon=1.0)
-        qnetwork_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                          environment_factory, output_dir)
-        save("Double Dueling DQN", qnetwork_results, output_dir, args.unique_id)
+        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                 environment_factory, output_dir)
+        agent_name = "Double Dueling DQN"
     elif experiment_num == 7:
         environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
                                                        time_invariant_state)
         agent_factory = make_agent_factory(Approach.Sarsa, epsilon=0.4, alpha=0.1, lmbda=0.5)
-        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, output_dir)
-        save("Sarsa", sarsa_results, output_dir, args.unique_id)
+        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                 environment_factory, output_dir)
+        agent_name = "True Online Sarsa(l)"
     elif experiment_num == 8:
         environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
                                                        time_invariant_state)
         agent_factory = make_agent_factory(Approach.TrueOnlineSarsaLambda, epsilon=0.4)
-        sarsa_results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                       environment_factory, output_dir)
-        save("True Online Sarsa Lambda", sarsa_results, output_dir, args.unique_id)
+        results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
+                                 environment_factory, output_dir)
+        agent_name = "True Online Sarsa(l)"
+
+    save(agent_name, experiment_num, results, output_dir, args.unique_id)
 
 
 def run_experiment(num_trials, num_evaluations, evaluation_period,
@@ -164,6 +148,25 @@ def evaluate(table, agent_factory, environment_factory, unique_name: str, out_di
     return cumulative_reward
 
 
+def save(name: str, experiment_num: int, log: ExperimentLog, out_dir: str, unique_num: int = 0):
+    out_prefix = out_dir
+
+    if not os.path.exists(out_prefix):
+        os.makedirs(out_prefix)
+    filename = str(experiment_num) + "_" + str(log.n) + "_" + name + str(unique_num) + ".csv"
+    full_out_path = os.path.join(out_prefix, filename)
+    if log.n > 1:
+        log.finalize_confidences()
+        data = np.c_[(log.series, log.means, log.variances, log.confidences)]
+        formats = ["%d", "%f", "%f", "%f"]
+    else:
+        data = np.c_[(log.series, log.means)]
+        formats = ["%d", "%f"]
+    np.savetxt(full_out_path, data,
+               fmt=formats,
+               delimiter=",")
+
+
 def train_agent(evaluation_period, num_stops, agent_factory, environment_factory):
     """
     Trains an agent, periodically yielding the agent's q-table
@@ -199,9 +202,6 @@ def train_agent(evaluation_period, num_stops, agent_factory, environment_factory
 
         if i % 10 == 0:
             print("%d: %f" % (i, reward))
-
-
-
 
 
 if __name__ == '__main__':
