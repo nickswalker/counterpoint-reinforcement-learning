@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from cantus_firmi import cantus_firmi
-from counterpoint.species_counterpoint import SpeciesOneCounterpoint
+from counterpoint.species.species_one import SpeciesOneCounterpoint
 from counterpoint.test_tasks import ScalesAreGood
 from utilities.factories import make_environment_factory, make_agent_factory, Approach
 from utilities.save_composition import save_composition
@@ -23,7 +23,7 @@ def main():
     parser.add_argument('-evaluations', type=int, default=10)
     parser.add_argument('-lamb', type=float, default=0.5)
     parser.add_argument('-alpha', type=float, default=0.4)
-    parser.add_argument('-epsilon', type=float, default=0.9)
+    parser.add_argument('-epsilon', type=float, default=0.3)
     parser.add_argument('-period', type=int, default=100)
     parser.add_argument('-unique-id', type=int)
     parser.add_argument('--log-evaluations', type=int)

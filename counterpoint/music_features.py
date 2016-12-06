@@ -1,28 +1,10 @@
-from enum import Enum
 from typing import List
 
 import numpy as np
-from abjad.tools.pitchtools.NamedInterval import NamedInterval
 from abjad.tools.scoretools import Note
 
 from counterpoint.composition_environment import CompositionState
 from rl.valuefunction.FeatureExtractor import StateFeatureExtractor
-
-
-class RelativeMotion(Enum):
-    similar = 0
-    parallel = 1
-    contrary = 2
-    oblique = 3
-    none = 4
-
-
-class Motion(Enum):
-    step_up = 0
-    step_down = 1
-    leap_up = 2
-    leap_down = 3
-    none = 4
 
 
 class MusicFeatureExtractor(StateFeatureExtractor):
@@ -69,20 +51,3 @@ class MusicFeatureExtractor(StateFeatureExtractor):
         return num
 
 
-def characterize_relative_motion(upper_motion: NamedInterval, lower_motion: NamedInterval) -> RelativeMotion:
-    if upper_motion.direction_string == lower_motion.direction_string:
-        if upper_motion.semitones == 0 and lower_motion.semitones == 0:
-            return RelativeMotion.none
-        elif upper_motion.interval_string == lower_motion.interval_string:
-            return RelativeMotion.parallel
-        else:
-            return RelativeMotion.similar
-    else:
-        return RelativeMotion.contrary
-
-
-def interval_or_none(first, second):
-    if first is None or second is None:
-        return None
-    else:
-        return NamedInterval.from_pitch_carriers(first, second)

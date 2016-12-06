@@ -9,7 +9,8 @@ from counterpoint.composition_environment import CompositionEnvironment
 from counterpoint.composition_parameters import CompositionParameters
 from counterpoint.constants import soprano_range, tenor_range
 from counterpoint.music_features import MusicFeatureExtractor
-from counterpoint.species_counterpoint import CounterpointTask, SpeciesOneCounterpoint
+from counterpoint.species.species_one import SpeciesOneCounterpoint
+from counterpoint.species_counterpoint import CounterpointTask
 from rl.agent.duelingqnetworkagent import DuelingQNetworkAgent
 from rl.agent.qlearning import QLearning
 from rl.agent.qnetworkagent import QNetworkAgent

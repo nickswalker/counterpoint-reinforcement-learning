@@ -55,25 +55,31 @@ class QNetworkAgent(Agent):
         state_prime = self.world.get_current_state()
         phi_prime = self.feature_extractor.extract(state_prime)
 
+        r = self.task.reward(state, action, state_prime)
+
+        _, qs = self.value_function.getqvalues(phi)
+
         if self.task.stateisfinal(state_prime):
             terminal = True
+            # Q(s,a) = 0 if s is the terminal state
+            target = 0
         else:
             terminal = False
+            _, q_primes = self.value_function.getqvalues(phi_prime)
+            target = np.max(q_primes)
 
-        r = self.task.reward(state, action, state_prime)
-        _, q_primes = self.value_function.getqvalues(phi_prime)
-        max_q_prime = np.max(q_primes)
+        qs[action_index] = r + self.gamma * target
 
-
-        q_primes[action_index] = r + self.gamma * max_q_prime
-        loss = self.value_function.update(phi, q_primes)
+        loss = self.value_function.update(phi, qs)
         # _, updated_values = self.value_function.getqvalues(phi)
 
+        # change = updated_values[action_index]
+        self.current_cumulative_reward += r
         if terminal:
             step_summary = "Loss %.2f r %d" % (loss, self.current_cumulative_reward)
-            print(step_summary)
+            #print(step_summary)
 
-        self.current_cumulative_reward += r
+
 
     def get_cumulative_reward(self) -> float:
         return self.current_cumulative_reward
@@ -91,16 +97,13 @@ class QNetwork:
         self.n_s_feat = num_state_features
         self.n_actions = num_actions
 
-        h_size = 512
-
         with tf.name_scope("qnetwork"):
             # State features
             self.inputs = tf.placeholder(shape=(1, self.n_s_feat), dtype=tf.float32)
             # A matrix with one entry per state-action pair, initialized to small values
-            self.weight_matrix = tf.Variable(tf.random_uniform((self.n_s_feat, self.n_actions), 0, .01))
+            self.weight_matrix = tf.Variable(tf.random_uniform((self.n_s_feat, self.n_actions), 0.0, .001))
             # One q-value is a dot product of the state features with the action values. This mat multiply
             # produces all the q_values at once.
-            # self.hidden_layer = tf.contrib.layers.fully_connected(self.inputs, self.n_s_feat, activation_fn=tf.nn.relu)
             self.q_out = tf.matmul(self.inputs, self.weight_matrix)
             self.argmax = tf.argmax(self.q_out, 1)
 

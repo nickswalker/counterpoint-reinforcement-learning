@@ -33,7 +33,7 @@ class TrueOnlineSarsaLambdaVFA(Agent):
         actions = domain.get_actions()
         self.feature_extractor = feature_extractor
         self.eligibility = np.zeros(self.feature_extractor.num_features())
-        self.value_function = LinearVFA(self.feature_extractor.num_features(), actions, per_action_vfa=False)
+        self.value_function = LinearVFA(self.feature_extractor.num_features(), actions, per_action_vfa=True)
         self.current_cumulative_reward = 0.0
 
     def act(self):
