@@ -9,7 +9,7 @@ from abjad.tools.topleveltools.iterate import iterate
 
 from counterpoint import constants
 from counterpoint.composition_environment import CompositionEnvironment, CompositionState
-from counterpoint.music_features import MusicFeatureExtractor, RelativeMotion
+from counterpoint.music_features import RelativeMotion, characterize_relative_motion
 from rl.task import Task
 
 
@@ -89,9 +89,9 @@ def slices_to_melodic_intervals(first, second) -> Tuple[NamedInterval, NamedInte
     return lower, upper
 
 
-def sices_to_motion(first, second) -> RelativeMotion:
+def slices_to_motion(first, second) -> RelativeMotion:
     lower, upper = slices_to_melodic_intervals(first, second)
-    return MusicFeatureExtractor.characterize_relative_motion(upper, lower)
+    return characterize_relative_motion(upper, lower)
 
 
 class SpeciesOneCounterpoint(GradedCounterpointTask):
@@ -174,7 +174,7 @@ class SpeciesOneCounterpoint(GradedCounterpointTask):
                 count = melodic_interval_tally.get(upper_melodic, 0) + 1
                 melodic_interval_tally[upper_melodic] = count
 
-                motion = MusicFeatureExtractor.characterize_relative_motion(upper_melodic, lower_melodic)
+                motion = characterize_relative_motion(upper_melodic, lower_melodic)
                 # Lines should always be moving
                 if motion is RelativeMotion.none:
                     penalties -= 5

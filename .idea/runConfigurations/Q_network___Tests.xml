@@ -13,7 +13,7 @@
     <module name="counterpoint-reinforcement-learning" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/runner.py" />
-    <option name="PARAMETERS" value="0 3 results/t-qn -evaluations 100 -history 1" />
+    <option name="PARAMETERS" value="0 3 results/t-qn -evaluations 100 -history 0 -alpha 0.1 --time-invariant-state" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>

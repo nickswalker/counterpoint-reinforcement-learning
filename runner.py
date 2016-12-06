@@ -28,9 +28,6 @@ def main():
     parser.add_argument('-unique-id', type=int)
     parser.add_argument('--log-evaluations', type=int)
     parser.add_argument("-history", type=int, default=3)
-    parser.add_argument('--feature', dest='feature', action='store_true')
-    parser.add_argument('--no-feature', dest='feature', )
-
     parser.add_argument("--time-invariant-state", action='store_true', default=False)
     args = parser.parse_args()
 
@@ -50,10 +47,10 @@ def main():
     key = cantus_firmi[0][2]
 
     if task is 0:
-        environment_factory = make_environment_factory([], meter, key, ScalesAreGood, history_length,
+        environment_factory = make_environment_factory(meter, key, ScalesAreGood, history_length,
                                                        time_invariant_state)
     elif task == 1:
-        environment_factory = make_environment_factory([], meter, key, SpeciesOneCounterpoint, history_length,
+        environment_factory = make_environment_factory(meter, key, SpeciesOneCounterpoint, history_length,
                                                        time_invariant_state)
     if agent == 0:
         approach = Approach.QLearning
@@ -63,13 +60,14 @@ def main():
         approach = Approach.TrueOnlineSarsaLambda
     elif agent == 3:
         approach = Approach.QNetwork
-    elif agent == 3:
+    elif agent == 4:
         approach = Approach.DDDQN
 
-    agent_factory = make_agent_factory(approach, epsilon=epsilon, alpha=alpha, lmda=lamb)
+    agent_factory = make_agent_factory(approach, epsilon=epsilon, alpha=alpha, lmbda=lamb,
+                                       time_invariant=time_invariant_state)
     agent_name = str(approach)
     results = run_experiment(num_trials, num_evaluations, evaluation_period, agent_factory,
-                                 environment_factory, output_dir)
+                             environment_factory, output_dir)
 
     save(agent_name, results, output_dir, args.unique_id)
 

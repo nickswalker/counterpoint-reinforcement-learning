@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import List
 
+import numpy as np
 from abjad.tools.pitchtools.NamedInterval import NamedInterval
 from abjad.tools.scoretools import Note
 
@@ -25,15 +26,20 @@ class Motion(Enum):
 
 
 class MusicFeatureExtractor(StateFeatureExtractor):
-    def __init__(self, num_pitches_per_voice: List[int], history_length: int):
+    def __init__(self, num_pitches_per_voice: List[int], history_length: int, position_invariant: bool = False):
         self.num_voices = len(num_pitches_per_voice)
+        self.position_invariant = position_invariant
         # Include a null class for unpopulated features
         self.max_beats = 12
         self.options_per_voice = [num_pitches + 1 for num_pitches in num_pitches_per_voice]
         self.history_length = history_length
 
-    def extract(self, state: CompositionState) -> List[float]:
-        features = []
+    def extract(self, state: CompositionState) -> np.array:
+        features = np.zeros(self.num_features())
+        if len(features) == 1:
+            features[0] = 1
+            return features
+        position = 0
         for i in range(0, self.num_voices):
             for j in range(0, self.history_length):
                 item = state.voices[i][j]
@@ -41,37 +47,38 @@ class MusicFeatureExtractor(StateFeatureExtractor):
                     # One pitch per voice
                     pitch = item.written_pitch
                     index = state.composition_parameters.pitch_indices[i][pitch]
-                    section = [0] * self.options_per_voice[i]
-                    section[index] = 1
-                    features += section
+                    features[position + index] = 1
                 else:
-                    section = [0] * self.options_per_voice[i]
-                    # Default activation
-                    section[-1] = 1
-                    features += section
+                    index = self.options_per_voice[i] - 1
+                    features[position + index] = 1
+                position += self.options_per_voice[i]
 
-        beat = int(float(state.preceding_duration) / 1.00)
-        beat_section = [0] * self.max_beats
-        beat_section[beat] = 1
-        features += beat_section
+        if not self.position_invariant:
+            beat = int(float(state.preceding_duration) / 1.00)
+            features[position + beat] = 1
         return features
 
     def num_features(self) -> int:
-        return sum(self.options_per_voice) * self.history_length + self.max_beats
-
-
-    @staticmethod
-    def characterize_relative_motion(upper_motion: NamedInterval, lower_motion: NamedInterval) -> RelativeMotion:
-        if upper_motion.direction_string == lower_motion.direction_string:
-            if upper_motion.semitones == 0 and lower_motion.semitones == 0:
-                return RelativeMotion.none
-            elif upper_motion.interval_string == lower_motion.interval_string:
-                return RelativeMotion.parallel
-            else:
-                return RelativeMotion.similar
+        if self.position_invariant:
+            num = sum(self.options_per_voice) * self.history_length
         else:
-            return RelativeMotion.contrary
+            num = sum(self.options_per_voice) * self.history_length + self.max_beats
+        #
+        if num == 0:
+            return 1
+        return num
 
+
+def characterize_relative_motion(upper_motion: NamedInterval, lower_motion: NamedInterval) -> RelativeMotion:
+    if upper_motion.direction_string == lower_motion.direction_string:
+        if upper_motion.semitones == 0 and lower_motion.semitones == 0:
+            return RelativeMotion.none
+        elif upper_motion.interval_string == lower_motion.interval_string:
+            return RelativeMotion.parallel
+        else:
+            return RelativeMotion.similar
+    else:
+        return RelativeMotion.contrary
 
 
 def interval_or_none(first, second):

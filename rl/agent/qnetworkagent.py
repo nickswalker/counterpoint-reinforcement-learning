@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import tensorflow as tf
 
@@ -15,7 +13,7 @@ class QNetworkAgent(Agent):
                  gamma=0.95, value_function=None):
         self.initial_epsilon = epsilon
         self.epsilon = epsilon
-        self.alpha = alpha / domain.history_length
+        self.alpha = alpha
         self.gamma = gamma
         self.feature_extractor = feature_extractor
 
@@ -69,11 +67,11 @@ class QNetworkAgent(Agent):
 
         q_primes[action_index] = r + self.gamma * max_q_prime
         loss = self.value_function.update(phi, q_primes)
-        _, updated_values = self.value_function.getqvalues(phi)
+        # _, updated_values = self.value_function.getqvalues(phi)
 
         if terminal:
             step_summary = "Loss %.2f r %d" % (loss, self.current_cumulative_reward)
-            # print(step_summary)
+            print(step_summary)
 
         self.current_cumulative_reward += r
 
@@ -112,22 +110,22 @@ class QNetwork:
             # q values (standard q update) and the state features for the state we just observed a reward from.
             self.target_qvalues = tf.placeholder(shape=[1, self.n_actions], dtype=tf.float32)
             self.loss = tf.reduce_sum(tf.square(self.target_qvalues - self.q_out))
-            trainer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+            trainer = tf.train.AdamOptimizer(learning_rate=learning_rate)
             self.updateModel = trainer.minimize(self.loss)
 
         self.session = tf.Session()
         init = tf.initialize_all_variables()
         self.session.run(init)
 
-    def getqvalues(self, state_features: List[float]):
-        prepped = np.array(state_features).reshape([1, self.n_s_feat])
+    def getqvalues(self, state_features: np.array):
+        prepped = state_features.reshape([1, self.n_s_feat])
         feed = {self.inputs: prepped}
         max_action, q_values = self.session.run([self.argmax, self.q_out], feed_dict=feed)
         return max_action[0], q_values[0]
 
-    def update(self, state_features: List[float], target: List[float]):
-        prepped_state = np.array(state_features).reshape([1, self.n_s_feat])
-        prepped_target = np.array(target).reshape([1, self.n_actions])
+    def update(self, state_features: np.array, target: np.array):
+        prepped_state = state_features.reshape([1, self.n_s_feat])
+        prepped_target = target.reshape([1, self.n_actions])
         feed = {self.inputs: prepped_state, self.target_qvalues: prepped_target}
         _, loss = self.session.run([self.updateModel, self.loss], feed_dict=feed)
         return loss

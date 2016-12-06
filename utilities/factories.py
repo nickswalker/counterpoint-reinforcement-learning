@@ -1,9 +1,8 @@
 from enum import Enum
-from typing import Tuple, List
+from typing import Tuple
 
 from abjad.tools.durationtools.Duration import Duration
 from abjad.tools.metertools import Meter
-from abjad.tools.scoretools import Voice
 from abjad.tools.tonalanalysistools import Scale
 
 from counterpoint.composition_environment import CompositionEnvironment
@@ -43,8 +42,7 @@ class Approach(Enum):
             return "Double Dueling DRQN"
 
 
-
-def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Scale,
+def make_environment_factory(meter: Meter, scale: Scale,
                              task_class: CounterpointTask = SpeciesOneCounterpoint, history_length: int = 2,
                              position_invariant=False):
     def generate_environment() -> Tuple[Domain, Task]:
@@ -59,10 +57,11 @@ def make_environment_factory(given_voices: List[Voice], meter: Meter, scale: Sca
     return generate_environment
 
 
-def make_agent_factory(approach: Approach, initial_value=0.5, epsilon=0.9, alpha=0.5, lmbda=0.95):
+def make_agent_factory(approach: Approach, initial_value=0.5, epsilon=0.9, alpha=0.5, lmbda=0.95,
+                       time_invariant: bool = False):
     def generate_agent(domain, task, table):
         extractor = MusicFeatureExtractor(domain.composition_parameters.num_pitches_per_voice,
-                                          domain.history_length)
+                                          domain.history_length, time_invariant)
         if approach == Approach.QLearning:
             agent = QLearning(domain, task, epsilon=epsilon, alpha=alpha)
         elif approach == Approach.Sarsa:
