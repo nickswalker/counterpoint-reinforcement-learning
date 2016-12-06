@@ -5,7 +5,7 @@ import numpy as np
 
 from cantus_firmi import cantus_firmi
 from counterpoint.species.species_one import SpeciesOneCounterpoint
-from counterpoint.test_tasks import ScalesAreGood
+from counterpoint.test_tasks import OnePitchIsGood
 from utilities.factories import make_environment_factory, make_agent_factory, Approach
 from utilities.save_composition import save_composition
 from utilities.trial_log import ExperimentLog
@@ -47,7 +47,7 @@ def main():
     key = cantus_firmi[0][2]
 
     if task is 0:
-        environment_factory = make_environment_factory(meter, key, ScalesAreGood, history_length,
+        environment_factory = make_environment_factory(meter, key, OnePitchIsGood, history_length,
                                                        time_invariant_state)
     elif task == 1:
         environment_factory = make_environment_factory(meter, key, SpeciesOneCounterpoint, history_length,
@@ -62,6 +62,10 @@ def main():
         approach = Approach.QNetwork
     elif agent == 4:
         approach = Approach.DDDQN
+    elif agent == 5:
+        approach = Approach.SarsaCMAC
+    elif agent == 6:
+        approach = Approach.SarsaLinear
 
     agent_factory = make_agent_factory(approach, epsilon=epsilon, alpha=alpha, lmbda=lamb,
                                        time_invariant=time_invariant_state)

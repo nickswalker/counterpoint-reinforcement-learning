@@ -3,7 +3,7 @@ from abjad.tools.pitchtools.NamedPitch import NamedPitch
 from abjad.tools.tonalanalysistools.ScaleDegree import ScaleDegree
 
 from counterpoint.composition_environment import CompositionEnvironment
-from counterpoint.music_features import MusicFeatureExtractor
+from counterpoint.music_features import MusicStateFeatureExtractor
 from counterpoint.species_counterpoint import CounterpointTask
 
 
@@ -15,7 +15,7 @@ class ScalesAreGood(CounterpointTask):
         i = len(self.domain.voices[0])
         upper = self.domain.composition_parameters.scale.named_pitch_class_to_scale_degree(self.domain.voices[0][-1])
         target = ScaleDegree((i % 8) + 1)
-        return -1 * abs(upper.number - target.number)
+        return -10 * abs(upper.number - target.number)
 
 
 class ThirdsAreGoodTask(CounterpointTask):
@@ -27,9 +27,10 @@ class ThirdsAreGoodTask(CounterpointTask):
 
 class UnisonsAreGoodTask(CounterpointTask):
     def reward(self, state, action, state_prime):
-        harmonic_intervals, melodic_intervals = MusicFeatureExtractor.last_n_intervals(1, self.domain.current_duration,
-                                                                                       self.domain.voices[0],
-                                                                                       self.domain.given_voices[0])
+        harmonic_intervals, melodic_intervals = MusicStateFeatureExtractor.last_n_intervals(1,
+                                                                                            self.domain.current_duration,
+                                                                                            self.domain.voices[0],
+                                                                                            self.domain.given_voices[0])
 
         if len(harmonic_intervals) > 0:
             last_interval = harmonic_intervals[0]
