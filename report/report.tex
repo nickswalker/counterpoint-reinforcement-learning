@@ -17,7 +17,8 @@
 \usepackage{mathtools}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
-\usepackage{multicol}
+\usepackage{booktabs}
+\usepackage{subcaption}
 \usepackage[letterpaper, portrait]{geometry}
  \geometry{
  letterpaper,
@@ -26,30 +27,34 @@
  top=20mm,
  bottom=20mm
  }
+ \frenchspacing
 \setlength{\columnsep}{10mm}
+\usepackage{sectsty}
+\sectionfont{\fontsize{12}{0}\selectfont}
 
 \usepackage{amsmath,amsfonts,amssymb}
 
 \renewcommand{\labelenumi}{\alph{enumi}.} % Make numbering in the enumerate environment by letter rather than number (e.g. section 6)
 
+\newcommand{\bsig}{\bigg{\Sigma}}
 %----------------------------------------------------------------------------------------
 %	DOCUMENT INFORMATION
 %----------------------------------------------------------------------------------------
 
-\title{A Reinforcement Learning Agent for Species Counterpoint Composition}
+\title{A Reinforcement Learning Agent for Species One Counterpoint Composition}
 
 \author{\textsc{Nick Walker}}
-\date{\today}
+\date{}
 
 \begin{document}
-
+\twocolumn
 	\maketitle % Insert the title, author and date
 
 
 	%----------------------------------------------------------------------------------------
 	%	ABSTRACT
 	%----------------------------------------------------------------------------------------
-\begin{multicols}{2}
+
 	\begin{abstract}
 	This paper presents a knowledge representation and reinforcement learning formulation for a counterpoint composition agent. Its performance is evaluated on the five traditional species counterpoint tasks.
 	\end{abstract}
@@ -59,46 +64,168 @@
 	%----------------------------------------------------------------------------------------
 
 	\section{Introduction}
+    Automatic composition research aims to create systems that are capable of producing pleasing music, something of broad commercial and artistic interest. While many researchers have applied artificial intelligence methods to composition tasks, relatively little work has evaluated reinforcement learning methods in these domains. One contributing factor to this may be that it is difficult to formulate reward functions and state-action representations that are both tractable and musically useful.
 
-Computer music research focuses on three main tasks; \textit{composition}, in which the agent creates new music, \textit{expression} in which the agent performs existing compositions, and \textit{improvisation}, in which the agent creates music in real-time as a reaction to its context.  While many researchers have applied artificial intelligence methods to  musical tasks, there  is a relative dearth of work that evaluates the usefulness of reinforcement learning methods. This is perhaps because of the difficulty of defining a reward signal.
+    \textit{Counterpoint}, a composition sub task that involves the creation of multiple independent but musically entwined voices, is one area of music that is amenable to a reinforcement learning formulation. Species counterpoint is a series of five constrained versions of counterpoint \cite{Kostka2012} which have well defined rules that can be translated into a reward function. The relatively short duration of these compositions makes their state-action space tractable.
 
-\textit{Counterpoint}, a composition sub task that involves the creation of  multiple independent but musically entwined voices, is one area of music that is particularly amenable to a reinforcement learning formulation. Species counterpoint is a series of five constrained versions of counterpoint, variously forbidding  different harmonic intervals, rhythms or other musical characteristics \cite{Kostka2012}. These tasks have very well defined rules which can be translated into a reward function that provides useful one-step feedback to a learner.
+    This work formulates species one counterpoint composition as a Markov Decision Process (MDP), and evaluates the performance of several standard methods from reinforcement learning. We provide both a qualitative characterization of learned policies. 
 
-This work uses reinforcement learning to implement a species counterpoint agent. The challenge remains of defining a state and action representation that can support learning across the array of species tasks. To this end, we outline the different musical subtleties that the agent needs to be able to distinguish, provide a representation, and empirically evaluate the approach.
-
-	\section{Related Works}
+   	%----------------------------------------------------------------------------------------
+    %	SECTION 4
+    %----------------------------------------------------------------------------------------
+	\section{Related Work}
     Researchers have applied a variety of artificial intelligence methods to algorithmic composition tasks.
 
-    The use of genetic algorithms for algorithmic composition, and in particular musical imitation tasks, has been explored extensively over the last three decades \cite{Miranda:2007:ECM:1197666}. Many researchers have had success with species counterpoint fitness functions, but the difficulty of providing an automatic fitness function for more sophisticated composition tasks has spawned many \textit{interactive genetic algorithm} based systems, which use human input to measure population performance \cite{Fernandez:2013:AMA:2591248.2591260}. The most significant example is Biles' \textit{GenJam} system, which processes human provided binary clicker feedback into measure- and phrase-level evaluative feedback \cite{Biles94genjam:a}.  Recent research has explored the use of multiple fitness functions. Scirea implemented a system to optimize three fitness functions which encoded harmonic and melodic characteristics \cite{Scirea2016}. The approach evaluated  generations by a set of fixed feasibility constraints, then performed multiobjective optimization on the feasible population to produce melodies. The use of multiple explicit objective functions promoted the generation of pieces that  only  partially satisfied each of them.  Because it blended several general principles, a qualitative evaluation was required to validate that the output produced was musical. In contrast, this work uses well defined tasks and eschews most issues of subjective musical taste, focusing instead on learning performance as its main evaluation metric.
+    The use of genetic algorithms for algorithmic composition, and in particular musical imitation tasks, has been explored extensively over the last three decades \cite{Miranda2007}. Many researchers have had success with species counterpoint fitness functions, but the difficulty of automatic assessment in more sophisticated composition tasks has spawned many \textit{interactive genetic algorithm} based systems, which use human input to measure population performance \cite{Fernandez2013}. The most significant example is Biles' \textit{GenJam} system, which processes human provided binary clicker feedback into short- and mid-term evaluative feedback \cite{Biles94}. 
+    
+    Recent research has explored the use of multiple fitness functions. Scirea implemented a system to optimize three fitness functions which encoded harmonic and melodic characteristics \cite{Scirea2016}. The approach evaluated generations by a set of fixed feasibility constraints, then performed multiobjective optimization on the feasible population to produce melodies. The use of multiple explicit objective functions promoted the generation of pieces that  only  partially satisfied each of them.  Because it blended several general principles, a qualitative evaluation was required to validate that the output produced was musical. In contrast, this work uses well defined tasks and eschews most issues of subjective musical taste, focusing instead on learning performance as its main evaluation metric.
 
  	There have been many constraint based approaches to the algorithmic composition task. Boenn et. al. used Answer Set Programming to implement the rules of species counterpoint in \textit{Anton}. The user may elect to provide additional constraints, in the form of notes or a key, then a composition can be generated by selecting a random solution from the answer set defined by both his and the system's constraints \cite{Boenn2008}. In general however, modeling composition as a strict constraint satisfaction is not only inflexible, but also computationally unfeasible. Some work has investigated parameterized soft constraints that can be layered over more conventional generative models. Papadopoulos et. al. combined Markov-chains built from a corpus with parametric meter and harmony constraints that encouraged higher level structure \cite{Papadopoulos2016}. Their method allows human input in the form of parameter choices and corpus selection.
 
-    There have been several direct applications of reinforcement learning to composition. Work by Smith used multiple Adaptive Resonance Theory (ART) neural networks, which implement a self organization scheme thought to reflect human cognition, to implement an agent that sought novel pitch and phrasal variations. The agent was intrinsically motivated, learning a reward signal that encouraged increases in model entropy \cite{Smith2012}. Work by Cont uses Dyna-Q with a cognitively inspired reward and update scheme. During training, the reward signal reinforces states that are prefixes of musical sequences in a corpus, and during evaluation it penalizes states that are prefixes to the most recently composed notes \cite{cont:hal-00839073}. Both approaches tap theories of music cognition, hoping to create emergent creative behavior, but ultimately struggle to generate palatable output. In contrast, this work seeks only to use reinforcement learning to learn to compose strict counterpoint.
+    There have been several direct applications of reinforcement learning to composition. Work by Smith used multiple Adaptive Resonance Theory (ART) neural networks, which implement a self organization scheme thought to reflect human cognition, to construct an agent that sought novel pitch and phrasal variations. The agent was intrinsically motivated, learning a reward signal that encouraged increases in model entropy \cite{Smith2012}. Work by Cont uses Dyna-Q with a cognitively inspired reward and update scheme. During training, the reward signal reinforces states that are prefixes of musical sequences in a corpus, and during evaluation it penalizes states that are prefixes to the most recently composed notes \cite{Cont2007}. Both works tapped theories of music cognition to create their reward function, hoping to promote emergent creative behavior, but ultimately struggle to generate palatable output. In contrast, this work uses the well defined rules of the species tasks as its reward function. This approach is not as general, but does not rely on solving creativity in order to generate music.
 
-	The work most similar to this paper is Phon-Amnuasuk's Sarsa agent for two-part species counterpoint \cite{Phon-Amnuaisuk2009}. It used a tabular representation where states were pitches and actions were interval movements relative to the previous pitch. The agent observes states and composes the next notes for each line jointly in one timestep. Their reward function implemented a subset of species one counterpoint, and lacks sufficient expressive capability to learn the effect of different note durations, something required by higher orders of species counterpoint. In contrast, this work develops an approach that is designed to be used with a value function approximation scheme and that is meant to be used across different species.
+	The work most similar to this paper is Phon-Amnuasuk's agent for two-part tonal counterpoint \cite{Phon-Amnuaisuk2009}. Their approach used a tabular representation where states were previous notes and actions were interval movements relative to the previous pitch. The agent observes states and composes the next notes for each line jointly in one timestep. Our work uses raw pitch values, and explores providing different history lengths. Further, our work explores the use value function approximation methods with this representation. Their reward function implemented a number of musical heuristics, but because their agent operates without the restrictions of species counterpoint, there is no simply objective measurement of its musical ability. In contrast, our work uses species one as a relatively well defined benchmark. 
 
-	Although improvisation approaches face unique difficulties, they share many representational concerns with composition approaches. Instead of attempting to store all states, Collin's \textit{Improvagent} used a small tabular representation built up out of cases, sequences of notes observed from a human performer \cite{collins2008reinforcement}. Thom's \textit{Band-out-of-the-Box} system learns to play solos with a human companion using a novel variable length tree representation, and a set of conglomerative features. These features–-histograms of previous pitches, intervals and movement directions-–are a useful method of abstracting the overall musical structure of a composition, and are used in this work to promote generalization.
+    
 
+   	%----------------------------------------------------------------------------------------
+    %	SECTION 4
+    %----------------------------------------------------------------------------------------
 	\section{Background}
-    (Musical definitions, brief historical context, enough explanation to make tasks and representation understandable)
-    \section{Approach}
-	\section{Experimental Setup}
+    \subsection{Music}
+    Music can be described by notes on a staff. A staff is graph with pitch increasing along the y-axis and time advancing along the x-axis. Each note describes a pitch, measured in tones, and a duration, measured in beats. The development of a single line of music horizontally across time is called melody, while the interaction of pitches vertically is called harmony. Two pitches, either vertically or horizontally create an interval. Intervals have aural qualities as a byproduct of human musical cognition; the most stable are said to be perfect consonances, slightly unstable but pleasing intervals are said to be imperfect consonances, while other intervals are said to be dissonant.
+    
+    \subsection{Species Counterpoint}
+    
+    Counterpoint is the interaction of two or more independent but interconnected musical lines. The analysis and composition of counterpoint is a challenging task for humans. Historically, musicians have been introduced to topic through Species Counterpoint, a series of restricted composition tasks invented by baroque composer Johann Joseph Fux in 1725 \cite{Davidian2015}. The first four species apply different constraints on the composer's use of specific intervals, and completely prescribe rhythm. The fifth task, florid counterpoint, allows the composer to freely transition between the four preceding species, introducing more rhythmic and stylistic variation. The resulting compositions are characteristic of 16th century sacred music, in the tradition of Giovanni Pierluigi da Palestrina, whose compositions Fux modeled species counterpoint after.
+    
+    This work examines the first species task, which constrains the composer to 11 notes per line and prescribes a fixed set of pitches for each voice.
+    \begin{figure}
+        \includegraphics[width=8cm]{ranges.pdf}
+        \caption{C major scale depicting a portion of the vocal ranges available. Full ranges are soprano [C4, G5] and tenor [C3, C5].}
+    \end{figure}
+    
+    \subsection{Reinforcement Learning}
+    \section{Formulation}
+    We consider Species One counterpoint as an episodic MDP. The agent is given the rhythm and the scale.
+    
+    \subsection{Reward Function}
+    Species counterpoint's strict rules and recommendations can be translated into a grading rubric. We manually assigned each rule violation into one of three categories: minor, error, and grave error, corresponding to the subjective severity. 
+    
+    This rubric is used to implement a \textsc{grade} routine, which assigns scores to compositions, either complete or in progress. When grading partial compositions, only penalties that cannot be corrected are assigned. For instance, an incomplete composition is not be penalized for failing to end in a particular way because it is still possible for a continuation of the composition to end correctly. Similarly, even though the empty composition is a poor composition, \textsc{grade} will return 0 because it is still possible to correct the composition.
+    
+    The grade is used to construct a reward function for the task: for each action, the agent is given a reward equal to the resulting decrease in the composition grade. 
+    \begin{equation}
+    r(s,a,s') = \textsc{grade}(s') - \textsc{grade}(s)
+    \end{equation}
+    
+    This reward function has the useful property that the cumulative reward at time $e$ is equal to the grade of the composition at $e$. This ensures that one-step feedback does not modify the optimal policy, which should compose music with a minimum of penalties. 
+    
+    \begin{align*}
+    \sum_{t=1}^{e} R_t &= \sum_{t=1}^{e} \textsc{grade}(s_t) - \textsc{grade}(s_{t-1})\\
+    &= \textsc{grade}(s_e)
+    \end{align*}
+    \begin{table}
+        \begin{tabular}{p{6cm}r}
+            \toprule
+            Element & Penalty\\
+            \midrule
+            Parallel, similar or oblique motion & -1\\
+            Leap & -1\\
+            Voice crossing & -1\\
+            Pitch used more than three times & -1\\
+            Dissonant harmonic interval & -5\\
+            Dissonant melodic interval & -5\\
+            Two or more harmonic perfect consonances in a row & -5\\
+            More than three of the same harmonic interval in a row & -5\\
+            Excessive range & -5\\
+            Failure to surround leap with counter-stepwise motion& -5\\
+            Failure to begin with tonic unison & -10\\
+            Failure to end with perfect authentic cadence & -10\\
+            
+            
+            \bottomrule
+        \end{tabular}
+        \caption{Species one grading rubric}
+    \end{table}
+    \subsection{State- and Action-spaces}
+    
+    The agent moves left-to-right composing vertical moments, which occur at beat thresholds where at least one voice requires a new note. In the species one task, there are 11 vertical moments, each requiring a new note for both voices. Because the agent knows the permissible pitches according to the scale and the voice ranges a prior\`i, there are 12 pitches available per voice. The agent can select any pair of pitches, including duplicates, as its action.
+   
+    State representation for composition is complicated by the fact that important structure can emerge at arbitrary time scales throughout the task: notes composed at the beginning of a piece can affect the value of notes near the end, but it is infeasible to provide the agent arbitrary amounts of preceding composition information. Instead, we provide a $k$-history of vertical moments. Due to the brevity of the species tasks, and their strong emphasis on local behavior, we hypothesize that this is sufficient to facilitate learning near-optimal policies.
+    
+    Species one emphasizes unique behavior at the beginning and end of compositions. Because we are not including a full history, it is necessary to include the beat number of the last vertical moment composed in the state so that the agent can be aware of when the composition is ending.
+    
+    If $l$ is the number of beats in the composition and $k$ is the history length, the size of a tabular representation of the state- and action-spaces is given by
+    \begin{equation}
+        |\boldmath{S}| = l \cdot 12^{2k} \hspace{0.5cm} |\boldmath{A}| = 12^2
+    \end{equation}
+  
+    
+   	%----------------------------------------------------------------------------------------
+    %	SECTION 5
+    %----------------------------------------------------------------------------------------
+	\section{Experimental Results}
+
+    The agent learns with an $\epsilon$-greedy exploration policy. The policy is assessed periodically by freezing the value function and evaluating a fully greedy composition. Plots show 90\% confidence intervals.
+
+    \begin{figure*}
+    \begin{subfigure}{\linewidth}
+        \includegraphics[width=\textwidth]{early.pdf}
+        \caption{Early evaluation. Grade -115}
+    \end{subfigure}
+    
+    \begin{subfigure}{\linewidth}
+        \includegraphics[width=\textwidth]{mid.pdf}
+        \caption{Mid evaluation. Grade -45}
+    \end{subfigure}
+    
+    \begin{subfigure}{\linewidth}
+        \includegraphics[width=\textwidth]{late.pdf}
+        \caption{Late evaluation. Grade -26}
+    \end{subfigure}
+    \caption{Compositions taken from the $k$ = 1 tabular agent's policy at different points of learning. Early compositions are essentially random. Later, better scoring compositions emerge, however these tend to exhibit excessive repetition.\protect\footnotemark}
+
+    \end{figure*}
+        \footnotetext{WAV audio files are available online at cs.utexas.edu/users/nwalker/counterpoint}
+
+   	%----------------------------------------------------------------------------------------
+    %	SECTION 6
+    %----------------------------------------------------------------------------------------
+	\section{Discussion}
+    
+    A tabular value function allows the agent to reach near optimal performance, even with $k$=1. However, because the agent cannot generalize, learning time is high. Experiments with higher values of $k$ failed to learn in reasonable amounts An agent using a tabular representation reaches a higher mean grade than the an agent using the best performing approximation approach we applied.
+    
+	Methods for learning in this type of environment are an active area of research \cite{Hausknecht2015}
+	\begin{figure}
+		\includegraphics[width=8cm, keepaspectratio]{figure0.pdf}
+        \caption{Tabular True Online Sarsa($\lambda$), $\lambda$ = 0.5, $\alpha$ = 0.6. Note the range of the x-axis.}
+	\end{figure}
+    
+   	\begin{figure}
+        \includegraphics[width=8cm, keepaspectratio]{figure1.pdf}
+        \caption{Sarsa with CMAC tile coding $\alpha$ = 0.6}
+    \end{figure}
+    
+    \begin{figure}
+        \includegraphics[width=8cm, keepaspectratio]{figure2.pdf}
+        \caption{Sarsa with CMAC tile coding, time-invariant state $\alpha$ = 0.6}
+    \end{figure}
 
 	%----------------------------------------------------------------------------------------
-	%	SECTION 4
+	%	SECTION 7
 	%----------------------------------------------------------------------------------------
 
+	\section{Conclusion and Future Work}
 
-	\section{Results}
-
-	%----------------------------------------------------------------------------------------
-	%	SECTION 5
-	%----------------------------------------------------------------------------------------
-
-	\section{Conclusions}
+   	%----------------------------------------------------------------------------------------
+    %	SECTION 8
+    %----------------------------------------------------------------------------------------
+        
 
     \section{Acknowledgments}
+    
+    We thank Jivko Sinapov and Elad Liebman for their helpful feedback and guidance.
 	\bibliography{references}{}
 	\bibliographystyle{plain}
-    \end{multicols}
 \end{document}
