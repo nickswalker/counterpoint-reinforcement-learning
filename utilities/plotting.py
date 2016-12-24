@@ -8,38 +8,30 @@ SPINE_COLOR = 'gray'
 
 
 class Plot:
-    def __init__(self, title, for_print: bool = False):
+    def __init__(self, title, for_print: bool = False, small: bool = False):
+
+        if small:
+            self.setsize(fig_width=8, fig_height=6)
+        else:
+            self.setsize()
+
+        title_string = title
+        if for_print:
+            self.latexify()
+            title_string = r"\textbf{%s}" % title
         self.for_print = for_print
         self.ax = pp.axes()
         pp.gcf().patch.set_alpha(0.5)
 
-        self.ax.set_xlabel('Episodes', fontsize=14)
+        self.ax.set_xlabel('Training episodes', fontsize=14)
         self.ax.set_ylabel('Grade', fontsize=14)
 
         self.markers = {"o", "D", "^", "8", "h", "s"}
-        title_string = title
-        if self.for_print:
-            self.latexify()
-            title_string = r"\textbf{%s}" % title
 
         self.ax.set_title(title_string, fontsize=18, fontweight='bold', y=1.05)
         self.ax = self.format_axes(self.ax)
 
-    def latexify(self, fig_width=None, fig_height=None, columns=1):
-        """Set up matplotlib's RC params for LaTeX plotting.
-        Call this before plotting a figure.
-        Parameters
-        ----------
-        fig_width : float, optional, inches
-        fig_height : float,  optional, inches
-        columns : {1, 2}
-        """
-
-        # code adapted from http://www.scipy.org/Cookbook/Matplotlib/LaTeX_Examples
-
-        # Width and max height in inches for IEEE journals taken from
-        # computer.org/cms/Computer.org/Journal%20templates/transactions_art_guide.pdf
-
+    def setsize(self, fig_width=None, fig_height=None, columns=1):
         assert (columns in [1, 2])
 
         if fig_width is None:
@@ -55,6 +47,27 @@ class Plot:
                   "so will reduce to" + str(MAX_HEIGHT_INCHES) + "inches.")
             fig_height = MAX_HEIGHT_INCHES
 
+        params = {
+            'figure.figsize': [fig_width, fig_height],
+
+        }
+        pp.rcParams.update(params)
+
+    def latexify(self):
+        """Set up matplotlib's RC params for LaTeX plotting.
+        Call this before plotting a figure.
+        Parameters
+        ----------
+        fig_width : float, optional, inches
+        fig_height : float,  optional, inches
+        columns : {1, 2}
+        """
+
+        # code adapted from http://www.scipy.org/Cookbook/Matplotlib/LaTeX_Examples
+
+        # Width and max height in inches for IEEE journals taken from
+        # computer.org/cms/Computer.org/Journal%20templates/transactions_art_guide.pdf
+
         params = {'backend': 'ps',
                   'text.latex.preamble': [r'\usepackage{gensymb}'],
                   'axes.labelsize': 2,
@@ -64,7 +77,6 @@ class Plot:
                   'xtick.labelsize': 6,
                   'ytick.labelsize': 6,
                   'text.usetex': True,
-                  'figure.figsize': [fig_width, fig_height],
                   'figure.titleweight': "bold",
                   'font.family': 'serif'
                   }
@@ -101,8 +113,7 @@ class Plot:
         pp.errorbar(series, means, yerr=confidences, label=label)
 
     def save(self, name: str, path: str):
-        # pp.legend(loc="lower right")
-
+        pp.legend(loc="lower right")
         pp.tight_layout()
         full_out = os.path.join(path, name + ".pdf")
         pdf = PdfPages(full_out)

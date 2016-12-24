@@ -9,7 +9,7 @@ from rl.valuefunction.tabular import StateActionValueTable
 
 
 class QLearning(Agent):
-    def __init__(self, domain: Domain, task: Task, epsilon=0.1, alpha=0.6, gamma=0.95, lamb=0.95, expected=False,
+    def __init__(self, domain: Domain, task: Task, epsilon=0.1, alpha=0.6, gamma=1.0, lamb=0.95, expected=False,
                  name="Q-learning"):
         """
         :param domain: The world the agent is placed in.

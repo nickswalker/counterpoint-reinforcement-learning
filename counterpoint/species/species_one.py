@@ -140,7 +140,6 @@ class SpeciesOneCounterpoint(GradedCounterpointTask):
                             ()
                             # print("we did it")
 
-        """
         for pitch, num in pitch_tally.items():
             if num > 2:
                 penalties -= 5 * num
@@ -152,6 +151,5 @@ class SpeciesOneCounterpoint(GradedCounterpointTask):
         for interval, num in melodic_interval_tally.items():
             if num > 5:
                 penalties -= 5 * num
-        """
 
         return penalties

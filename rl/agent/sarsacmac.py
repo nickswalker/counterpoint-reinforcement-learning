@@ -13,7 +13,7 @@ from rl.valuefunction.CMACValueFunction import CMACValueFunction
 
 class SarsaCMAC(Agent):
     def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.1, alpha=0.6,
-                 gamma=0.95, name="Sarsa"):
+                 gamma=1.0, name="Sarsa"):
         """
         :param domain: The world the agent is placed in.
         :param task: The task in the world, which defines the reward function.

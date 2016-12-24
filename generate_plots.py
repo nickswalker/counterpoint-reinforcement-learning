@@ -13,14 +13,27 @@ def main():
     figure_num = int(sys.argv[1])
     for_print = bool(int(sys.argv[2]))
 
-    def load_and_plot(dir: str, plot: Plot):
+    def load_and_plot(dir: str, plot: Plot, name: str):
         series, means, confidences = load(dir)
-        plot.plot_evaluations(series, means, confidences, "Sarsa")
+        plot.plot_evaluations(series, means, confidences, name)
 
     if figure_num == 0:
-        plot = Plot("Mean evaluation grade per episode, p=0.10", for_print)
-        load_and_plot("results/s-1-i/", plot)
-        plot.save("graph0", "report")
+        plot = Plot("Mean evaluation grade", for_print, small=True)
+        load_and_plot("results/s0-q-1-1k/collected", plot, "k=1")
+        plot.save("figure0", "report")
+    elif figure_num == 1:
+        plot = Plot("Mean evaluation grade", for_print, small=True)
+        load_and_plot("results/cmac-1-Wed-Dec-07-02-38/collected", plot, "k=1")
+        load_and_plot("results/cmac-2-Wed-Dec-07-02-37/collected ", plot, "k=2")
+        load_and_plot("results/cmac-3-Wed-Dec-07-02-37/collected", plot, "k=3")
+        plot.save("figure1", "report")
+    elif figure_num == 2:
+        plot = Plot("Mean evaluation grade", for_print, small=True)
+        load_and_plot("results/cmac-1-inv-Wed-Dec-07-02-38/collected", plot, "k=1")
+        load_and_plot("results/cmac-2-inv-Wed-Dec-07-02-38/collected ", plot, "k=2")
+        plot.save("figure2", "report")
+
+
 
 
 def load(dir: str):
@@ -48,7 +61,7 @@ def mean_confidence_interval(data, confidence=0.90):
 
 
 def extract_data(paths: List[str]) -> List[List[float]]:
-    rewards_by_episode = [[] for i in range(0, 200)]
+    rewards_by_episode = [[] for i in range(0, 1000)]
     for path in paths:
         episodes, rewards, _, _ = np.loadtxt(path, delimiter=",").T
         i = 0
@@ -57,10 +70,11 @@ def extract_data(paths: List[str]) -> List[List[float]]:
             i += 1
 
     rewards_by_episode = [episode for episode in rewards_by_episode if len(episode) > 0]
-    return rewards_by_episode
+    return rewards_by_episode[0:min(200, len(rewards_by_episode))]
 
 
 def get_trials(dir: str) -> List[str]:
+    dir = dir.strip()
     return [os.path.join(dir, name) for name in os.listdir(dir) if
             os.path.isfile(os.path.join(dir, name)) and not name.startswith(".") and name.endswith(".csv")]
 

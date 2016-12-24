@@ -13,7 +13,7 @@ from rl.valuefunction import FeatureExtractor
 
 class DuelingQNetworkAgent(Agent):
     def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.1, alpha=0.5,
-                 gamma=0.95, value_function=None):
+                 gamma=1.0, value_function=None):
         self.initial_epsilon = epsilon
         self.epsilon = epsilon
         self.alpha = alpha / domain.history_length
@@ -57,7 +57,6 @@ class DuelingQNetworkAgent(Agent):
         phi = self.feature_extractor.extract(state)
         action = self.choose_action(phi)
         action_index = self.world.action_to_index[action]
-        print(action_index)
 
         self.world.apply_action(action)
         state_prime = self.world.get_current_state()
@@ -70,7 +69,7 @@ class DuelingQNetworkAgent(Agent):
         if self.total_steps > self.pretraining_steps and self.total_steps % self.update_frequency == 0:
             trainBatch = self.experience_buffer.sample(self.batch_size)  # Get a random batch of experiences.
             loss = self.value_function.update(trainBatch)
-            print(loss)
+            # print(loss)
 
 
         self.current_cumulative_reward += r
@@ -80,7 +79,7 @@ class DuelingQNetworkAgent(Agent):
 
         if terminal:
             step_summary = "r %d" % self.current_cumulative_reward
-            print(step_summary)
+            #print(step_summary)
 
     def get_cumulative_reward(self) -> float:
         return self.current_cumulative_reward

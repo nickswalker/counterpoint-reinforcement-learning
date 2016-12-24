@@ -13,7 +13,7 @@ from rl.valuefunction.linear import LinearVFA
 
 class TrueOnlineSarsaLambdaVFA(Agent):
     def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.1, alpha=0.6,
-                 gamma=0.95, lamb=0.95, name="True Online Sarsa(λ)"):
+                 gamma=1.0, lamb=0.95, name="True Online Sarsa(λ)"):
         """
         :param domain: The world the agent is placed in.
         :param task: The task in the world, which defines the reward function.

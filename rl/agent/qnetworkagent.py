@@ -10,7 +10,7 @@ from rl.valuefunction import FeatureExtractor
 
 class QNetworkAgent(Agent):
     def __init__(self, domain: Domain, task: Task, feature_extractor: FeatureExtractor, epsilon=0.5, alpha=0.1,
-                 gamma=0.95, value_function=None):
+                 gamma=1.0, value_function=None):
         self.initial_epsilon = epsilon
         self.epsilon = epsilon
         self.alpha = alpha
